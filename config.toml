@@ -1,0 +1,3 @@
+ReceiverIP = "127.0.0.1"
+ReceiverPort = 5000
+BufferSize = 8192
