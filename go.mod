@@ -24,7 +24,7 @@ require (
 require (
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.4 // indirect
-	github.com/sirupsen/logrus v1.9.0 // indirect
+	github.com/sirupsen/logrus v1.9.0
 	github.com/vivint/infectious v0.0.0-20200605153912-25a574ae18a3
 	github.com/zhuangsirui/binpacker v2.0.0+incompatible
 	go.uber.org/ratelimit v0.2.0
