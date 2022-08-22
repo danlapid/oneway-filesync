@@ -1,8 +1,12 @@
 package main
 
 import (
-	"net"
+	"context"
 	"oneway-filesync/pkg/config"
+	"oneway-filesync/pkg/udpreceiver"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/sirupsen/logrus"
 )
@@ -15,28 +19,14 @@ func main() {
 
 	}
 
-	buf := make([]byte, conf.ChunkSize)
-	addr := net.UDPAddr{
-		Port: conf.ReceiverPort,
-		IP:   net.ParseIP(conf.ReceiverIP),
-	}
+	chunks_chan := make(chan []byte, 20000)
 
-	conn, err := net.ListenUDP("udp", &addr)
-	if err != nil {
-		logrus.Errorf("Some error %v\n", err)
-		return
-	}
+	ctx, cancel := context.WithCancel(context.Background()) // Create a cancelable context and pass it to all goroutines, allows us to gracefully shut down the program
 
-	for {
-		_, remoteaddr, err := conn.ReadFromUDP(buf)
-		logrus.Infof("Read a message from %v %d \n", remoteaddr, len(buf))
-		if err != nil {
-			logrus.Errorf("Some error  %v", err)
-			continue
-		}
-	}
-}
+	udpreceiver.CreateReceiver(ctx, conf.ReceiverIP, conf.ReceiverPort, conf.ChunkSize, chunks_chan, 20)
 
-func GetConfig(s string) {
-	panic("unimplemented")
+	done := make(chan os.Signal, 1)
+	signal.Notify(done, syscall.SIGINT, syscall.SIGTERM)
+	<-done
+	cancel() // Gracefully shutdown and stop all goroutines
 }
