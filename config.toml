@@ -1,3 +1,6 @@
 ReceiverIP = "127.0.0.1"
 ReceiverPort = 5000
-BufferSize = 8192
+BandwidthLimit = 100000
+ChunkSize = 8192
+ChunkFecRequired = 5
+ChunkFecTotal = 8

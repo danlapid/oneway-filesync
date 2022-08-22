@@ -5,9 +5,12 @@ import (
 )
 
 type Config struct {
-	ReceiverIP   string
-	ReceiverPort int
-	BufferSize   int
+	ReceiverIP       string
+	ReceiverPort     int
+	BandwidthLimit   int
+	ChunkSize        int
+	ChunkFecRequired int
+	ChunkFecTotal    int
 }
 
 func GetConfig(file string) (Config, error) {
