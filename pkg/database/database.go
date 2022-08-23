@@ -1,7 +1,6 @@
 package database
 
 import (
-	"io"
 	"oneway-filesync/pkg/structs"
 	"os"
 
@@ -17,6 +16,9 @@ type File struct {
 	Started  bool   `json:"started"`  // Whether or not the file started being sent
 	Finished bool   `json:"finished"` // Whether or not the file was sent/recieved successfully
 	Success  bool   `json:"success"`  // Whether or not the finish was successfull
+}
+type ReceivedFile struct {
+	File
 }
 
 // Opens a connection to the database,
@@ -46,15 +48,14 @@ func QueueFileForSending(path string) error {
 	if err != nil {
 		return err
 	}
-
-	h := structs.HashNew()
-	if _, err := io.Copy(h, f); err != nil {
+	hash, err := structs.HashFile(f)
+	if err != nil {
 		return err
 	}
 	file := File{
 		Path:     path,
 		Size:     fi.Size(),
-		Hash:     h.Sum(nil),
+		Hash:     hash[:],
 		Finished: false,
 		Success:  false,
 	}

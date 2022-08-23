@@ -13,10 +13,6 @@ FEC
     input: chunks
     output: chunks
  ->
-Duplication
-    input: chunks
-    output: chunks
- ->
 Rate Limiter
     input: chunks
     output: chunks
@@ -26,10 +22,6 @@ Socket Sender
 
 
 Socker reader
-    output: chunks
- ->
-Frame deduplicator
-    input: chunks
     output: chunks
  ->
 DeFEC

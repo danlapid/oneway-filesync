@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"oneway-filesync/pkg/structs"
 
 	"github.com/sirupsen/logrus"
 )
@@ -11,7 +12,7 @@ import (
 type UdpSender struct {
 	ip    string
 	port  int
-	input chan []byte
+	input chan structs.Chunk
 }
 
 func Worker(ctx context.Context, conf UdpSender) {
@@ -25,13 +26,21 @@ func Worker(ctx context.Context, conf UdpSender) {
 		select {
 		case <-ctx.Done():
 			return
-		case buf := <-conf.input:
+		case share := <-conf.input:
+			buf, err := share.Encode()
+			if err != nil {
+				logrus.WithFields(logrus.Fields{
+					"Path": share.Path,
+					"Hash": share.Hash,
+				}).Errorf("Error encoding share: %v", err)
+				continue
+			}
 			conn.Write(buf)
 		}
 	}
 }
 
-func CreateSender(ctx context.Context, ip string, port int, input chan []byte, workercount int) {
+func CreateSender(ctx context.Context, ip string, port int, input chan structs.Chunk, workercount int) {
 	conf := UdpSender{
 		ip:    ip,
 		port:  port,

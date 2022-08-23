@@ -3,22 +3,45 @@ package udpreceiver
 import (
 	"context"
 	"net"
+	"oneway-filesync/pkg/structs"
 
 	"github.com/sirupsen/logrus"
 )
 
 type UdpReceiver struct {
-	ip        string
-	port      int
+	conn      *net.UDPConn
 	chunksize int
-	output    chan []byte
+	output    chan structs.Chunk
 }
 
 func Worker(ctx context.Context, conf UdpReceiver) {
 	buf := make([]byte, conf.chunksize)
+
+	for {
+		// conn.Close will interrupt any waiting ReadFromUDP
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			n, _, err := conf.conn.ReadFromUDP(buf)
+			if err != nil {
+				logrus.Errorf("Error reading from socket:  %v", err)
+				continue
+			}
+			chunk, err := structs.DecodeChunk(buf[:n])
+			if err != nil {
+				logrus.Errorf("Error decoding chunk:  %v", err)
+				continue
+			}
+			conf.output <- chunk
+		}
+	}
+}
+
+func CreateReceiver(ctx context.Context, ip string, port int, chunksize int, output chan structs.Chunk, workercount int) {
 	addr := net.UDPAddr{
-		IP:   net.ParseIP(conf.ip),
-		Port: conf.port,
+		IP:   net.ParseIP(ip),
+		Port: port,
 	}
 
 	conn, err := net.ListenUDP("udp", &addr)
@@ -31,21 +54,8 @@ func Worker(ctx context.Context, conf UdpReceiver) {
 		conn.Close()
 	}()
 
-	for {
-		// conn.Close will interrupt any waiting ReadFromUDP
-		n, _, err := conn.ReadFromUDP(buf)
-		if err != nil {
-			logrus.Errorf("Some error  %v", err)
-			continue
-		}
-		conf.output <- buf[:n]
-	}
-}
-
-func CreateReceiver(ctx context.Context, ip string, port int, chunksize int, output chan []byte, workercount int) {
 	conf := UdpReceiver{
-		ip:        ip,
-		port:      port,
+		conn:      conn,
 		chunksize: chunksize,
 		output:    output,
 	}

@@ -5,8 +5,10 @@ import (
 	"oneway-filesync/pkg/bandwidthlimiter"
 	"oneway-filesync/pkg/config"
 	"oneway-filesync/pkg/database"
+	"oneway-filesync/pkg/fecencoder"
 	"oneway-filesync/pkg/filereader"
 	"oneway-filesync/pkg/queuereader"
+	"oneway-filesync/pkg/structs"
 	"oneway-filesync/pkg/udpsender"
 	"os"
 	"os/signal"
@@ -23,14 +25,16 @@ func main() {
 	}
 
 	queue_chan := make(chan database.File, 100)
-	chunks_chan := make(chan []byte, 20000)
-	bw_limited_chunks := make(chan []byte, 5) // Small buffer to reduce burst
+	chunks_chan := make(chan structs.Chunk, 10000)
+	shares_chan := make(chan structs.Chunk, 10000)
+	bw_limited_chunks := make(chan structs.Chunk, 5) // Small buffer to reduce burst
 
 	ctx, cancel := context.WithCancel(context.Background()) // Create a cancelable context and pass it to all goroutines, allows us to gracefully shut down the program
 
 	queuereader.CreateQueueReader(ctx, queue_chan)
-	filereader.CreateFileReader(ctx, conf.ChunkSize, conf.ChunkFecRequired, conf.ChunkFecTotal, queue_chan, chunks_chan, 20)
-	bandwidthlimiter.CreateBandwidthLimiter(ctx, conf.BandwidthLimit/conf.ChunkSize, chunks_chan, bw_limited_chunks)
+	filereader.CreateFileReader(ctx, conf.ChunkSize, conf.ChunkFecRequired, queue_chan, chunks_chan, 20)
+	fecencoder.CreateFecEncoder(ctx, conf.ChunkSize, conf.ChunkFecRequired, conf.ChunkFecTotal, chunks_chan, shares_chan, 20)
+	bandwidthlimiter.CreateBandwidthLimiter(ctx, conf.BandwidthLimit/conf.ChunkSize, shares_chan, bw_limited_chunks)
 	udpsender.CreateSender(ctx, conf.ReceiverIP, conf.ReceiverPort, bw_limited_chunks, 20)
 
 	done := make(chan os.Signal, 1)

@@ -4,18 +4,31 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/binary"
+	"io"
+	"os"
+	"time"
 
 	"github.com/zhuangsirui/binpacker"
 )
 
-const HASHSIZE int = sha256.Size
+const HASHSIZE = 32 // Using the sha256.Size as const directly causes linting issues
 
-var HashNew = sha256.New
+func HashFile(f *os.File) ([HASHSIZE]byte, error) {
+	var ret [HASHSIZE]byte
+	h := sha256.New()
+	if _, err := io.Copy(h, f); err != nil {
+		return ret, err
+	}
+	hash := h.Sum(nil)
+	copy(ret[:], hash)
+	return ret, nil
+}
 
 type Chunk struct {
 	Path       string
+	Size       int64
 	Hash       [HASHSIZE]byte
-	DataIndex  uint32
+	DataOffset int64
 	ShareIndex uint32
 	Data       []byte
 }
@@ -37,8 +50,9 @@ func (c Chunk) Encode() ([]byte, error) {
 	packer := binpacker.NewPacker(binary.BigEndian, buffer)
 	packer.PushUint32(uint32(len(pathbytes)))
 	packer.PushBytes(pathbytes)
+	packer.PushInt64(c.Size)
 	packer.PushBytes(c.Hash[:])
-	packer.PushUint32(c.DataIndex)
+	packer.PushInt64(c.DataOffset)
 	packer.PushUint32(c.ShareIndex)
 	packer.PushUint32(uint32(len(c.Data)))
 	packer.PushBytes(c.Data)
@@ -47,18 +61,27 @@ func (c Chunk) Encode() ([]byte, error) {
 }
 
 // Decode binary buffer into a Chunk object
-func DecodeChunk(data []byte) error {
+func DecodeChunk(data []byte) (Chunk, error) {
 	var c Chunk
 
 	buffer := bytes.NewBuffer(data)
 	unpacker := binpacker.NewUnpacker(binary.BigEndian, buffer)
 	unpacker.StringWithUint32Prefix(&c.Path)
 	var hashslice []byte
+	unpacker.FetchInt64(&c.Size)
 	unpacker.FetchBytes(uint64(HASHSIZE), &hashslice)
 	copy(c.Hash[:], hashslice)
-	unpacker.FetchUint32(&c.DataIndex)
+	unpacker.FetchInt64(&c.DataOffset)
 	unpacker.FetchUint32(&c.ShareIndex)
 	unpacker.BytesWithUint32Prefix(&c.Data)
 
-	return unpacker.Error()
+	return c, unpacker.Error()
+}
+
+type OpenTempFile struct {
+	TempFile    string
+	Path        string
+	Size        int64
+	Hash        [HASHSIZE]byte
+	LastUpdated time.Time
 }

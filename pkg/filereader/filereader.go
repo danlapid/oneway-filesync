@@ -1,4 +1,3 @@
-// Reads file paths to be sent from the queue
 package filereader
 
 import (
@@ -10,29 +9,21 @@ import (
 	"os"
 
 	"github.com/sirupsen/logrus"
-	"github.com/vivint/infectious"
 )
 
 type FileReader struct {
 	chunksize int
 	required  int
-	total     int
 	input     chan database.File
-	output    chan []byte
+	output    chan structs.Chunk
 }
 
 func Worker(ctx context.Context, conf FileReader) {
-	fec, err := infectious.NewFEC(conf.required, conf.total)
-	if err != nil {
-		logrus.Errorf("Error creating fec object: %v", err)
-		return
-	}
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case file := <-conf.input:
-
 			realchunksize := conf.chunksize - structs.ChunkOverhead(file.Path)
 			realchunksize *= conf.required // FEC chunk size is BuffferSize/Required
 
@@ -51,7 +42,7 @@ func Worker(ctx context.Context, conf FileReader) {
 			}
 			defer f.Close()
 
-			var i uint32 = 0
+			var offset int64 = 0
 			success := false
 			r := bufio.NewReader(f)
 			for {
@@ -69,42 +60,15 @@ func Worker(ctx context.Context, conf FileReader) {
 					break
 				}
 
-				// FEC routine:
-				// For each part of the <total> parts we make a realchunksize/<required> share
-				// These are encoding using reed solomon FEC
-				// Then we send each share seperately
-				// At the end they are combined and concatenated to form the file.
-				// TODO: export this part to another pipe
-				for j := 0; j < conf.total; j++ {
-					sharedata := make([]byte, realchunksize/conf.required)
-					err = fec.EncodeSingle(data[:], sharedata, j)
-					if err != nil {
-						logrus.WithFields(logrus.Fields{
-							"Path": file.Path,
-							"Hash": file.Hash,
-						}).Errorf("Error FECing chunk: %v", err)
-						break
-					}
-
-					chunk := structs.Chunk{
-						Path:      file.Path,
-						DataIndex: i,
-						Data:      sharedata,
-					}
-					copy(chunk.Hash[:], file.Hash)
-
-					chunksharedata, err := chunk.Encode()
-					if err != nil {
-						logrus.WithFields(logrus.Fields{
-							"Path": file.Path,
-							"Hash": file.Hash,
-						}).Errorf("Error encoding chunk: %v", err)
-						break
-					}
-					conf.output <- chunksharedata
+				chunk := structs.Chunk{
+					Path:       file.Path,
+					Size:       file.Size,
+					DataOffset: offset,
+					Data:       data,
 				}
-
-				i++
+				copy(chunk.Hash[:], file.Hash)
+				conf.output <- chunk
+				offset += int64(n)
 			}
 			file.Finished = true
 			file.Success = success
@@ -123,11 +87,10 @@ func Worker(ctx context.Context, conf FileReader) {
 	}
 }
 
-func CreateFileReader(ctx context.Context, chunksize int, required int, total int, input chan database.File, output chan []byte, workercount int) {
+func CreateFileReader(ctx context.Context, chunksize int, required int, input chan database.File, output chan structs.Chunk, workercount int) {
 	conf := FileReader{
 		chunksize: chunksize,
 		required:  required,
-		total:     total,
 		input:     input,
 		output:    output,
 	}

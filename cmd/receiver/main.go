@@ -3,6 +3,11 @@ package main
 import (
 	"context"
 	"oneway-filesync/pkg/config"
+	"oneway-filesync/pkg/fecdecoder"
+	"oneway-filesync/pkg/filecloser"
+	"oneway-filesync/pkg/filewriter"
+	"oneway-filesync/pkg/shareassembler"
+	"oneway-filesync/pkg/structs"
 	"oneway-filesync/pkg/udpreceiver"
 	"os"
 	"os/signal"
@@ -19,11 +24,18 @@ func main() {
 
 	}
 
-	chunks_chan := make(chan []byte, 20000)
+	shares_chan := make(chan structs.Chunk, 10000)
+	sharelist_chan := make(chan []structs.Chunk, 10000)
+	chunks_chan := make(chan structs.Chunk, 10000)
+	finishedfiles_chan := make(chan structs.OpenTempFile, 10)
 
 	ctx, cancel := context.WithCancel(context.Background()) // Create a cancelable context and pass it to all goroutines, allows us to gracefully shut down the program
 
-	udpreceiver.CreateReceiver(ctx, conf.ReceiverIP, conf.ReceiverPort, conf.ChunkSize, chunks_chan, 20)
+	udpreceiver.CreateReceiver(ctx, conf.ReceiverIP, conf.ReceiverPort, conf.ChunkSize, shares_chan, 20)
+	shareassembler.CreateShareAssembler(ctx, conf.ChunkFecRequired, conf.ChunkFecTotal, shares_chan, sharelist_chan, 20)
+	fecdecoder.CreateFecDecoder(ctx, conf.ChunkFecRequired, conf.ChunkFecTotal, sharelist_chan, chunks_chan, 20)
+	filewriter.CreateFileWriter(ctx, conf.TempDir, chunks_chan, finishedfiles_chan, 20)
+	filecloser.CreateFileCloser(ctx, conf.OutDir, finishedfiles_chan, 5)
 
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, syscall.SIGINT, syscall.SIGTERM)
