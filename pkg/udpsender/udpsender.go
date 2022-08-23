@@ -15,7 +15,7 @@ type UdpSender struct {
 	input chan structs.Chunk
 }
 
-func Worker(ctx context.Context, conf UdpSender) {
+func Worker(ctx context.Context, conf *UdpSender) {
 	conn, err := net.Dial("udp", fmt.Sprintf("%s:%d", conf.ip, conf.port))
 	if err != nil {
 		logrus.Errorf("Error creating udp socket: %v", err)
@@ -31,7 +31,7 @@ func Worker(ctx context.Context, conf UdpSender) {
 			if err != nil {
 				logrus.WithFields(logrus.Fields{
 					"Path": share.Path,
-					"Hash": share.Hash,
+					"Hash": fmt.Sprintf("%x", share.Hash),
 				}).Errorf("Error encoding share: %v", err)
 				continue
 			}
@@ -47,6 +47,6 @@ func CreateSender(ctx context.Context, ip string, port int, input chan structs.C
 		input: input,
 	}
 	for i := 0; i < workercount; i++ {
-		go Worker(ctx, conf)
+		go Worker(ctx, &conf)
 	}
 }

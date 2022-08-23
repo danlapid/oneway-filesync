@@ -2,6 +2,7 @@ package filecloser
 
 import (
 	"context"
+	"fmt"
 	"oneway-filesync/pkg/database"
 	"oneway-filesync/pkg/structs"
 	"os"
@@ -15,7 +16,7 @@ type FileCloser struct {
 	input  chan structs.OpenTempFile
 }
 
-func Worker(ctx context.Context, conf FileCloser) {
+func Worker(ctx context.Context, conf *FileCloser) {
 	db, err := database.OpenDatabase()
 	if err != nil {
 		logrus.Errorf("Error connecting to the database: %v", err)
@@ -39,7 +40,7 @@ func Worker(ctx context.Context, conf FileCloser) {
 				logrus.WithFields(logrus.Fields{
 					"TempFile": file.TempFile,
 					"Path":     file.Path,
-					"Hash":     file.Hash,
+					"Hash":     fmt.Sprintf("%x", file.Hash),
 				}).Errorf("Error truncating tempfile to original size: %v", err)
 				dbentry.Success = false
 				db.Save(&dbentry)
@@ -51,7 +52,7 @@ func Worker(ctx context.Context, conf FileCloser) {
 				logrus.WithFields(logrus.Fields{
 					"TempFile": file.TempFile,
 					"Path":     file.Path,
-					"Hash":     file.Hash,
+					"Hash":     fmt.Sprintf("%x", file.Hash),
 				}).Errorf("Error opening tempfile: %v", err)
 				dbentry.Success = false
 				db.Save(&dbentry)
@@ -64,7 +65,7 @@ func Worker(ctx context.Context, conf FileCloser) {
 				logrus.WithFields(logrus.Fields{
 					"TempFile": file.TempFile,
 					"Path":     file.Path,
-					"Hash":     file.Hash,
+					"Hash":     fmt.Sprintf("%x", file.Hash),
 				}).Errorf("Error hashing tempfile: %v", err)
 				dbentry.Success = false
 				db.Save(&dbentry)
@@ -74,7 +75,7 @@ func Worker(ctx context.Context, conf FileCloser) {
 				logrus.WithFields(logrus.Fields{
 					"TempFile":     file.TempFile,
 					"Path":         file.Path,
-					"Hash":         file.Hash,
+					"Hash":         fmt.Sprintf("%x", file.Hash),
 					"TempFileHash": hash,
 				}).Errorf("Hash mismatch ", err)
 				dbentry.Success = false
@@ -83,10 +84,35 @@ func Worker(ctx context.Context, conf FileCloser) {
 			}
 
 			newpath := filepath.Join(conf.outdir, file.Path)
-			os.Rename(file.TempFile, newpath)
+			err = os.MkdirAll(filepath.Dir(newpath), os.ModePerm)
+			if err != nil {
+				logrus.WithFields(logrus.Fields{
+					"TempFile":     file.TempFile,
+					"Path":         file.Path,
+					"Hash":         fmt.Sprintf("%x", file.Hash),
+					"TempFileHash": hash,
+				}).Errorf("Failed creating directory path: %v", err)
+				dbentry.Success = false
+				db.Save(&dbentry)
+				continue
+			}
+
+			err = os.Rename(file.TempFile, newpath)
+			if err != nil {
+				logrus.WithFields(logrus.Fields{
+					"TempFile":     file.TempFile,
+					"Path":         file.Path,
+					"Hash":         fmt.Sprintf("%x", file.Hash),
+					"TempFileHash": hash,
+				}).Errorf("Failed moving tempfile to new location: %v", err)
+				dbentry.Success = false
+				db.Save(&dbentry)
+				continue
+			}
+
 			logrus.WithFields(logrus.Fields{
 				"Path":    file.Path,
-				"Hash":    file.Hash,
+				"Hash":    fmt.Sprintf("%x", file.Hash),
 				"NewPath": newpath,
 			}).Infof("Successfully finished writing file")
 			dbentry.Success = true
@@ -101,6 +127,6 @@ func CreateFileCloser(ctx context.Context, outdir string, input chan structs.Ope
 		input:  input,
 	}
 	for i := 0; i < workercount; i++ {
-		go Worker(ctx, conf)
+		go Worker(ctx, &conf)
 	}
 }

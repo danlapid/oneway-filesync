@@ -3,6 +3,7 @@ package database
 import (
 	"oneway-filesync/pkg/structs"
 	"os"
+	"path/filepath"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -27,31 +28,43 @@ type ReceivedFile struct {
 // we leave it as defaults for now.
 func OpenDatabase() (*gorm.DB, error) {
 	dbURL := "postgres://postgres:postgres@localhost:5432/postgres"
-	db, err := gorm.Open(postgres.Open(dbURL), &gorm.Config{})
+	return gorm.Open(postgres.Open(dbURL), &gorm.Config{})
+}
+
+func ConfigureDatabase() error {
+	db, err := OpenDatabase()
 	if err != nil {
-		return nil, err
+		return err
 	}
 	err = db.AutoMigrate(&File{})
-	return db, err
+	return err
 }
 
 // Receives a file path, hashes it and pushes it into the database
 // This should be run from an external program on the source machine
 // The sender reads files from this database and sends them.
 func QueueFileForSending(path string) error {
+	path, err := filepath.Abs(path)
+	if err != nil {
+		return err
+	}
+
 	f, err := os.Open(path)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
+
 	fi, err := f.Stat()
 	if err != nil {
 		return err
 	}
+
 	hash, err := structs.HashFile(f)
 	if err != nil {
 		return err
 	}
+
 	file := File{
 		Path:     path,
 		Size:     fi.Size(),
@@ -59,10 +72,12 @@ func QueueFileForSending(path string) error {
 		Finished: false,
 		Success:  false,
 	}
+
 	db, err := OpenDatabase()
 	if err != nil {
 		return err
 	}
+
 	result := db.Create(&file)
 	return result.Error
 }

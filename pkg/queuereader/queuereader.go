@@ -3,6 +3,7 @@ package queuereader
 
 import (
 	"context"
+	"fmt"
 	"oneway-filesync/pkg/database"
 	"time"
 
@@ -13,7 +14,7 @@ type QueueReader struct {
 	output chan database.File
 }
 
-func Worker(ctx context.Context, conf QueueReader) {
+func Worker(ctx context.Context, conf *QueueReader) {
 	db, err := database.OpenDatabase()
 	if err != nil {
 		logrus.Errorf("Error connecting to the database: %v", err)
@@ -33,7 +34,7 @@ func Worker(ctx context.Context, conf QueueReader) {
 				if err != nil {
 					logrus.WithFields(logrus.Fields{
 						"Path": file.Path,
-						"Hash": file.Hash,
+						"Hash": fmt.Sprintf("%x", file.Hash),
 					}).Errorf("Error setting to Started in database %v", err)
 					continue
 				}
@@ -47,5 +48,5 @@ func CreateQueueReader(ctx context.Context, output chan database.File) {
 	conf := QueueReader{
 		output: output,
 	}
-	go Worker(ctx, conf)
+	go Worker(ctx, &conf)
 }

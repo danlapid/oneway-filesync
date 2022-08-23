@@ -24,6 +24,12 @@ func main() {
 		return
 	}
 
+	err = database.ConfigureDatabase()
+	if err != nil {
+		logrus.Errorf("Failed setting up db with err %v\n", err)
+		return
+	}
+
 	queue_chan := make(chan database.File, 100)
 	chunks_chan := make(chan structs.Chunk, 10000)
 	shares_chan := make(chan structs.Chunk, 10000)

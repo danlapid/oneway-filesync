@@ -14,7 +14,7 @@ type UdpReceiver struct {
 	output    chan structs.Chunk
 }
 
-func Worker(ctx context.Context, conf UdpReceiver) {
+func Worker(ctx context.Context, conf *UdpReceiver) {
 	buf := make([]byte, conf.chunksize)
 
 	for {
@@ -60,6 +60,6 @@ func CreateReceiver(ctx context.Context, ip string, port int, chunksize int, out
 		output:    output,
 	}
 	for i := 0; i < workercount; i++ {
-		go Worker(ctx, conf)
+		go Worker(ctx, &conf)
 	}
 }

@@ -2,6 +2,7 @@ package fecdecoder
 
 import (
 	"context"
+	"fmt"
 	"oneway-filesync/pkg/structs"
 	"time"
 
@@ -31,7 +32,7 @@ type FecDecoder struct {
 }
 
 // m := make(map[string]int)
-func Worker(ctx context.Context, conf FecDecoder) {
+func Worker(ctx context.Context, conf *FecDecoder) {
 	fec, err := infectious.NewFEC(conf.required, conf.total)
 	if err != nil {
 		logrus.Errorf("Error creating fec object: %v", err)
@@ -53,7 +54,7 @@ func Worker(ctx context.Context, conf FecDecoder) {
 			if err != nil {
 				logrus.WithFields(logrus.Fields{
 					"Path": chunks[0].Path,
-					"Hash": chunks[0].Hash,
+					"Hash": fmt.Sprintf("%x", chunks[0].Hash),
 				}).Errorf("Error FEC decoding shares: %v", err)
 				continue
 			}
@@ -77,6 +78,6 @@ func CreateFecDecoder(ctx context.Context, required int, total int, input chan [
 		output:   output,
 	}
 	for i := 0; i < workercount; i++ {
-		go Worker(ctx, conf)
+		go Worker(ctx, &conf)
 	}
 }

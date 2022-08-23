@@ -11,7 +11,6 @@ type Config struct {
 	ChunkSize        int
 	ChunkFecRequired int
 	ChunkFecTotal    int
-	TempDir          string
 	OutDir           string
 }
 

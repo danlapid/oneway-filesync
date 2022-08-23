@@ -3,6 +3,7 @@ package filereader
 import (
 	"bufio"
 	"context"
+	"fmt"
 	"io"
 	"oneway-filesync/pkg/database"
 	"oneway-filesync/pkg/structs"
@@ -18,7 +19,7 @@ type FileReader struct {
 	output    chan structs.Chunk
 }
 
-func Worker(ctx context.Context, conf FileReader) {
+func Worker(ctx context.Context, conf *FileReader) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -29,14 +30,14 @@ func Worker(ctx context.Context, conf FileReader) {
 
 			logrus.WithFields(logrus.Fields{
 				"Path": file.Path,
-				"Hash": file.Hash,
+				"Hash": fmt.Sprintf("%x", file.Hash),
 			}).Infof("Started sending file")
 
 			f, err := os.Open(file.Path)
 			if err != nil {
 				logrus.WithFields(logrus.Fields{
 					"Path": file.Path,
-					"Hash": file.Hash,
+					"Hash": fmt.Sprintf("%x", file.Hash),
 				}).Errorf("Error opening file: %v", err)
 				continue
 			}
@@ -55,7 +56,7 @@ func Worker(ctx context.Context, conf FileReader) {
 					}
 					logrus.WithFields(logrus.Fields{
 						"Path": file.Path,
-						"Hash": file.Hash,
+						"Hash": fmt.Sprintf("%x", file.Hash),
 					}).Errorf("Error reading file: %v", err)
 					break
 				}
@@ -74,13 +75,13 @@ func Worker(ctx context.Context, conf FileReader) {
 			file.Success = success
 			logrus.WithFields(logrus.Fields{
 				"Path": file.Path,
-				"Hash": file.Hash,
+				"Hash": fmt.Sprintf("%x", file.Hash),
 			}).Infof("File finished sending, Success=%t", success)
 			err = database.UpdateFileInDatabase(file)
 			if err != nil {
 				logrus.WithFields(logrus.Fields{
 					"Path": file.Path,
-					"Hash": file.Hash,
+					"Hash": fmt.Sprintf("%x", file.Hash),
 				}).Errorf("Error updating Finished in database %v", err)
 			}
 		}
@@ -95,6 +96,6 @@ func CreateFileReader(ctx context.Context, chunksize int, required int, input ch
 		output:    output,
 	}
 	for i := 0; i < workercount; i++ {
-		go Worker(ctx, conf)
+		go Worker(ctx, &conf)
 	}
 }

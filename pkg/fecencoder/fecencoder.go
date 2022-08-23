@@ -2,6 +2,7 @@ package fecencoder
 
 import (
 	"context"
+	"fmt"
 	"oneway-filesync/pkg/structs"
 
 	"github.com/sirupsen/logrus"
@@ -16,7 +17,7 @@ type FecEncoder struct {
 	output    chan structs.Chunk
 }
 
-func Worker(ctx context.Context, conf FecEncoder) {
+func Worker(ctx context.Context, conf *FecEncoder) {
 	fec, err := infectious.NewFEC(conf.required, conf.total)
 	if err != nil {
 		logrus.Errorf("Error creating fec object: %v", err)
@@ -41,7 +42,7 @@ func Worker(ctx context.Context, conf FecEncoder) {
 				if err != nil {
 					logrus.WithFields(logrus.Fields{
 						"Path": chunk.Path,
-						"Hash": chunk.Hash,
+						"Hash": fmt.Sprintf("%x", chunk.Hash),
 					}).Errorf("Error FEC encoding chunk: %v", err)
 					break
 				}
@@ -71,6 +72,6 @@ func CreateFecEncoder(ctx context.Context, chunksize int, required int, total in
 		output:    output,
 	}
 	for i := 0; i < workercount; i++ {
-		go Worker(ctx, conf)
+		go Worker(ctx, &conf)
 	}
 }
