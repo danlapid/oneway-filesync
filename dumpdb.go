@@ -6,7 +6,6 @@ import (
 )
 
 func main() {
-
 	var files []database.File
 	db, _ := database.OpenDatabase("s_")
 	db.Limit(1000).Find(&files)

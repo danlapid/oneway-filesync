@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"io"
 	"log"
+	"net/http"
 	"oneway-filesync/pkg/config"
 	"oneway-filesync/pkg/database"
 	"oneway-filesync/pkg/receiver"
@@ -45,7 +46,7 @@ func TestSmallFile(t *testing.T) {
 	defer os.Remove(testfile)
 
 	database.QueueFileForSending(senderdb, testfile)
-	waitForFinishedFile(t, receiverdb, testfile, time.Second*60)
+	waitForFinishedFile(t, receiverdb, testfile, time.Minute)
 }
 
 func TestLargeFile(t *testing.T) {
@@ -64,14 +65,17 @@ func TestLargeFile(t *testing.T) {
 	defer os.Remove(testfile)
 
 	database.QueueFileForSending(senderdb, testfile)
-	waitForFinishedFile(t, receiverdb, testfile, time.Second*90)
+	waitForFinishedFile(t, receiverdb, testfile, time.Minute*2)
 }
 
 func TestVeryLargeFile(t *testing.T) {
+	go func() {
+		http.ListenAndServe("localhost:8080", nil)
+	}()
 	senderdb, receiverdb, teardowntest := setupTest(t, config.Config{
 		ReceiverIP:       "127.0.0.1",
 		ReceiverPort:     5000,
-		BandwidthLimit:   500 * 1024 * 1024,
+		BandwidthLimit:   100 * 1024 * 1024,
 		ChunkSize:        8192,
 		ChunkFecRequired: 5,
 		ChunkFecTotal:    8,
@@ -83,7 +87,7 @@ func TestVeryLargeFile(t *testing.T) {
 	defer os.Remove(testfile)
 
 	database.QueueFileForSending(senderdb, testfile)
-	waitForFinishedFile(t, receiverdb, testfile, time.Second*90)
+	waitForFinishedFile(t, receiverdb, testfile, time.Minute*20)
 }
 
 func waitForFinishedFile(t *testing.T, db *gorm.DB, path string, timeout time.Duration) {
@@ -142,7 +146,6 @@ func setupTest(t *testing.T, conf config.Config) (*gorm.DB, *gorm.DB, func()) {
 	}
 
 	ctx, cancel := context.WithCancel(context.Background()) // Create a cancelable context and pass it to all goroutines, allows us to gracefully shut down the program
-
 	receiver.Receiver(ctx, receiverdb, conf)
 	sender.Sender(ctx, senderdb, conf)
 

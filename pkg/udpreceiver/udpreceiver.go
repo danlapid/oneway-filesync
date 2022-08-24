@@ -43,7 +43,7 @@ func Worker(ctx context.Context, conf *UdpReceiver) {
 	}
 }
 
-func CreateReceiver(ctx context.Context, ip string, port int, chunksize int, output chan *structs.Chunk, workercount int) {
+func CreateUdpReceiver(ctx context.Context, ip string, port int, chunksize int, output chan *structs.Chunk, workercount int) {
 	addr := net.UDPAddr{
 		IP:   net.ParseIP(ip),
 		Port: port,

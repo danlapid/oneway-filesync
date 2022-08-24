@@ -25,7 +25,7 @@ type ShareAssembler struct {
 	required int
 	total    int
 	input    chan *structs.Chunk
-	output   chan []structs.Chunk
+	output   chan []*structs.Chunk
 	cache    utils.RWMutexMap[CacheKey, *CacheValue]
 }
 
@@ -65,9 +65,9 @@ func Worker(ctx context.Context, conf *ShareAssembler) {
 				value, loaded := conf.cache.LoadAndDelete(CacheKey{Hash: chunk.Hash, DataOffset: chunk.DataOffset})
 				if loaded && (len(value.Shares) >= conf.required) {
 					n := len(value.Shares)
-					var shares []structs.Chunk
+					var shares []*structs.Chunk
 					for i := 0; i < n; i++ {
-						shares = append(shares, *<-value.Shares)
+						shares = append(shares, <-value.Shares)
 					}
 					conf.output <- shares
 				}
@@ -76,7 +76,7 @@ func Worker(ctx context.Context, conf *ShareAssembler) {
 	}
 }
 
-func CreateShareAssembler(ctx context.Context, required int, total int, input chan *structs.Chunk, output chan []structs.Chunk, workercount int) {
+func CreateShareAssembler(ctx context.Context, required int, total int, input chan *structs.Chunk, output chan []*structs.Chunk, workercount int) {
 	conf := ShareAssembler{
 		required: required,
 		total:    total,

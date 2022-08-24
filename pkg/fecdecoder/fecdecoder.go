@@ -27,11 +27,10 @@ type CacheValue struct {
 type FecDecoder struct {
 	required int
 	total    int
-	input    chan []structs.Chunk
+	input    chan []*structs.Chunk
 	output   chan *structs.Chunk
 }
 
-// m := make(map[string]int)
 func Worker(ctx context.Context, conf *FecDecoder) {
 	fec, err := infectious.NewFEC(conf.required, conf.total)
 	if err != nil {
@@ -69,7 +68,7 @@ func Worker(ctx context.Context, conf *FecDecoder) {
 	}
 }
 
-func CreateFecDecoder(ctx context.Context, required int, total int, input chan []structs.Chunk, output chan *structs.Chunk, workercount int) {
+func CreateFecDecoder(ctx context.Context, required int, total int, input chan []*structs.Chunk, output chan *structs.Chunk, workercount int) {
 	conf := FecDecoder{
 		required: required,
 		total:    total,
