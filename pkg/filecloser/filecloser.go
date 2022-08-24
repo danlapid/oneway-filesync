@@ -29,22 +29,9 @@ func Worker(ctx context.Context, conf *FileCloser) {
 		case file := <-conf.input:
 			dbentry := database.File{
 				Path:     file.Path,
-				Size:     file.Size,
 				Hash:     file.Hash[:],
 				Started:  true,
 				Finished: true,
-			}
-
-			err := os.Truncate(file.TempFile, file.Size)
-			if err != nil {
-				logrus.WithFields(logrus.Fields{
-					"TempFile": file.TempFile,
-					"Path":     file.Path,
-					"Hash":     fmt.Sprintf("%x", file.Hash),
-				}).Errorf("Error truncating tempfile to original size: %v", err)
-				dbentry.Success = false
-				db.Save(&dbentry)
-				continue
 			}
 
 			f, err := os.Open(file.TempFile)

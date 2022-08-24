@@ -12,7 +12,6 @@ import (
 type File struct {
 	gorm.Model
 	Path     string `json:"path"`     // Original file path in source machine
-	Size     int64  `json:"size"`     // Size of the file, required for unpadding
 	Hash     []byte `json:"hash"`     // Hash of the file for completeness validation
 	Started  bool   `json:"started"`  // Whether or not the file started being sent
 	Finished bool   `json:"finished"` // Whether or not the file was sent/recieved successfully
@@ -43,7 +42,7 @@ func ConfigureDatabase() error {
 // Receives a file path, hashes it and pushes it into the database
 // This should be run from an external program on the source machine
 // The sender reads files from this database and sends them.
-func QueueFileForSending(path string) error {
+func QueueFileForSending(db *gorm.DB, path string) error {
 	path, err := filepath.Abs(path)
 	if err != nil {
 		return err
@@ -55,11 +54,6 @@ func QueueFileForSending(path string) error {
 	}
 	defer f.Close()
 
-	fi, err := f.Stat()
-	if err != nil {
-		return err
-	}
-
 	hash, err := structs.HashFile(f)
 	if err != nil {
 		return err
@@ -67,25 +61,11 @@ func QueueFileForSending(path string) error {
 
 	file := File{
 		Path:     path,
-		Size:     fi.Size(),
 		Hash:     hash[:],
 		Finished: false,
 		Success:  false,
 	}
 
-	db, err := OpenDatabase()
-	if err != nil {
-		return err
-	}
-
 	result := db.Create(&file)
 	return result.Error
-}
-
-func UpdateFileInDatabase(file File) error {
-	db, err := OpenDatabase()
-	if err != nil {
-		return err
-	}
-	return db.Save(&file).Error
 }

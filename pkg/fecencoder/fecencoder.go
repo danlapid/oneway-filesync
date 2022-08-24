@@ -28,8 +28,9 @@ func Worker(ctx context.Context, conf *FecEncoder) {
 		case <-ctx.Done():
 			return
 		case chunk := <-conf.input:
-
-			sharesize := conf.chunksize - structs.ChunkOverhead(chunk.Path)
+			padding := (conf.required - (len(chunk.Data) % conf.required)) % conf.required
+			sharesize := (len(chunk.Data) + padding) / conf.required
+			chunk.Data = append(chunk.Data, make([]byte, padding)...)
 
 			// FEC routine:
 			// For each part of the <total> parts we make a realchunksize/<required> share
@@ -38,7 +39,7 @@ func Worker(ctx context.Context, conf *FecEncoder) {
 			// At the end they are combined and concatenated to form the file.
 			for i := 0; i < conf.total; i++ {
 				sharedata := make([]byte, sharesize)
-				err = fec.EncodeSingle(chunk.Data[:], sharedata, i)
+				err = fec.EncodeSingle(chunk.Data, sharedata, i)
 				if err != nil {
 					logrus.WithFields(logrus.Fields{
 						"Path": chunk.Path,
@@ -48,12 +49,12 @@ func Worker(ctx context.Context, conf *FecEncoder) {
 				}
 
 				chunk := structs.Chunk{
-					Path:       chunk.Path,
-					Size:       chunk.Size,
-					Hash:       chunk.Hash,
-					DataOffset: chunk.DataOffset,
-					ShareIndex: uint32(i),
-					Data:       sharedata,
+					Path:        chunk.Path,
+					Hash:        chunk.Hash,
+					DataOffset:  chunk.DataOffset,
+					DataPadding: uint32(padding),
+					ShareIndex:  uint32(i),
+					Data:        sharedata,
 				}
 
 				conf.output <- chunk

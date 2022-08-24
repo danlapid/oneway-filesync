@@ -34,7 +34,6 @@ func Manager(ctx context.Context, conf *FileWriter) {
 				if time.Since(value.LastUpdated).Seconds() > 30 {
 					conf.cache.Delete(tempfilepath)
 					conf.output <- *value
-					logrus.Infof("Sent file")
 				}
 				return true
 			})
@@ -72,7 +71,6 @@ func Worker(ctx context.Context, conf *FileWriter) {
 			conf.cache.Store(tempfilepath, &structs.OpenTempFile{
 				TempFile:    tempfilepath,
 				Path:        chunk.Path,
-				Size:        chunk.Size,
 				Hash:        chunk.Hash,
 				LastUpdated: time.Now(),
 			})

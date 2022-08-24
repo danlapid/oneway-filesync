@@ -38,9 +38,9 @@ func main() {
 		return
 	}
 
-	shares_chan := make(chan structs.Chunk, 10000)
-	sharelist_chan := make(chan []structs.Chunk, 10000)
-	chunks_chan := make(chan structs.Chunk, 10000)
+	shares_chan := make(chan structs.Chunk, 100)
+	sharelist_chan := make(chan []structs.Chunk, 100)
+	chunks_chan := make(chan structs.Chunk, 100)
 	finishedfiles_chan := make(chan structs.OpenTempFile, 10)
 
 	ctx, cancel := context.WithCancel(context.Background()) // Create a cancelable context and pass it to all goroutines, allows us to gracefully shut down the program

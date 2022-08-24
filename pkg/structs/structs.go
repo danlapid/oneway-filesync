@@ -25,12 +25,12 @@ func HashFile(f *os.File) ([HASHSIZE]byte, error) {
 }
 
 type Chunk struct {
-	Path       string
-	Size       int64
-	Hash       [HASHSIZE]byte
-	DataOffset int64
-	ShareIndex uint32
-	Data       []byte
+	Path        string
+	Hash        [HASHSIZE]byte
+	DataOffset  int64
+	DataPadding uint32
+	ShareIndex  uint32
+	Data        []byte
 }
 
 // Returns the percise overhead of a chunk
@@ -50,9 +50,9 @@ func (c Chunk) Encode() ([]byte, error) {
 	packer := binpacker.NewPacker(binary.BigEndian, buffer)
 	packer.PushUint32(uint32(len(pathbytes)))
 	packer.PushBytes(pathbytes)
-	packer.PushInt64(c.Size)
 	packer.PushBytes(c.Hash[:])
 	packer.PushInt64(c.DataOffset)
+	packer.PushUint32(c.DataPadding)
 	packer.PushUint32(c.ShareIndex)
 	packer.PushUint32(uint32(len(c.Data)))
 	packer.PushBytes(c.Data)
@@ -68,10 +68,10 @@ func DecodeChunk(data []byte) (Chunk, error) {
 	unpacker := binpacker.NewUnpacker(binary.BigEndian, buffer)
 	unpacker.StringWithUint32Prefix(&c.Path)
 	var hashslice []byte
-	unpacker.FetchInt64(&c.Size)
 	unpacker.FetchBytes(uint64(HASHSIZE), &hashslice)
 	copy(c.Hash[:], hashslice)
 	unpacker.FetchInt64(&c.DataOffset)
+	unpacker.FetchUint32(&c.DataPadding)
 	unpacker.FetchUint32(&c.ShareIndex)
 	unpacker.BytesWithUint32Prefix(&c.Data)
 
@@ -81,7 +81,6 @@ func DecodeChunk(data []byte) (Chunk, error) {
 type OpenTempFile struct {
 	TempFile    string
 	Path        string
-	Size        int64
 	Hash        [HASHSIZE]byte
 	LastUpdated time.Time
 }

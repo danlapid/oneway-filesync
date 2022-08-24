@@ -61,10 +61,9 @@ func Worker(ctx context.Context, conf *FecDecoder) {
 
 			conf.output <- structs.Chunk{
 				Path:       chunks[0].Path,
-				Size:       chunks[0].Size,
 				Hash:       chunks[0].Hash,
 				DataOffset: chunks[0].DataOffset,
-				Data:       data,
+				Data:       data[:len(data)-int(chunks[0].DataPadding)],
 			}
 		}
 	}

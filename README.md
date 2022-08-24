@@ -31,3 +31,8 @@ DeFEC
 File Writer
     input: chunks:
     output: Finished files
+
+
+psql -h 127.0.0.1 -p 5432 -U postgres -d postgres -c "SELECT * FROM files"
+psql -h 127.0.0.1 -p 5432 -U postgres -d postgres -c "DELETE FROM files"
+TODO: different db for sent and received

@@ -20,6 +20,11 @@ type FileReader struct {
 }
 
 func Worker(ctx context.Context, conf *FileReader) {
+	db, err := database.OpenDatabase()
+	if err != nil {
+		logrus.Errorf("Error connecting to the database: %v", err)
+		return
+	}
 	for {
 		select {
 		case <-ctx.Done():
@@ -63,9 +68,8 @@ func Worker(ctx context.Context, conf *FileReader) {
 
 				chunk := structs.Chunk{
 					Path:       file.Path,
-					Size:       file.Size,
 					DataOffset: offset,
-					Data:       data,
+					Data:       data[:n],
 				}
 				copy(chunk.Hash[:], file.Hash)
 				conf.output <- chunk
@@ -77,7 +81,7 @@ func Worker(ctx context.Context, conf *FileReader) {
 				"Path": file.Path,
 				"Hash": fmt.Sprintf("%x", file.Hash),
 			}).Infof("File finished sending, Success=%t", success)
-			err = database.UpdateFileInDatabase(file)
+			err = db.Save(&file).Error
 			if err != nil {
 				logrus.WithFields(logrus.Fields{
 					"Path": file.Path,
