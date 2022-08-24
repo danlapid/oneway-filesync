@@ -9,19 +9,16 @@ import (
 	"path/filepath"
 
 	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
 type FileCloser struct {
+	db     *gorm.DB
 	outdir string
-	input  chan structs.OpenTempFile
+	input  chan *structs.OpenTempFile
 }
 
 func Worker(ctx context.Context, conf *FileCloser) {
-	db, err := database.OpenDatabase()
-	if err != nil {
-		logrus.Errorf("Error connecting to the database: %v", err)
-		return
-	}
 	for {
 		select {
 		case <-ctx.Done():
@@ -42,7 +39,7 @@ func Worker(ctx context.Context, conf *FileCloser) {
 					"Hash":     fmt.Sprintf("%x", file.Hash),
 				}).Errorf("Error opening tempfile: %v", err)
 				dbentry.Success = false
-				db.Save(&dbentry)
+				conf.db.Save(&dbentry)
 				continue
 			}
 			defer f.Close()
@@ -55,7 +52,7 @@ func Worker(ctx context.Context, conf *FileCloser) {
 					"Hash":     fmt.Sprintf("%x", file.Hash),
 				}).Errorf("Error hashing tempfile: %v", err)
 				dbentry.Success = false
-				db.Save(&dbentry)
+				conf.db.Save(&dbentry)
 				continue
 			}
 			if hash != file.Hash {
@@ -63,10 +60,10 @@ func Worker(ctx context.Context, conf *FileCloser) {
 					"TempFile":     file.TempFile,
 					"Path":         file.Path,
 					"Hash":         fmt.Sprintf("%x", file.Hash),
-					"TempFileHash": hash,
-				}).Errorf("Hash mismatch ", err)
+					"TempFileHash": fmt.Sprintf("%x", hash),
+				}).Errorf("Hash mismatch")
 				dbentry.Success = false
-				db.Save(&dbentry)
+				conf.db.Save(&dbentry)
 				continue
 			}
 
@@ -77,10 +74,10 @@ func Worker(ctx context.Context, conf *FileCloser) {
 					"TempFile":     file.TempFile,
 					"Path":         file.Path,
 					"Hash":         fmt.Sprintf("%x", file.Hash),
-					"TempFileHash": hash,
+					"TempFileHash": fmt.Sprintf("%x", hash),
 				}).Errorf("Failed creating directory path: %v", err)
 				dbentry.Success = false
-				db.Save(&dbentry)
+				conf.db.Save(&dbentry)
 				continue
 			}
 
@@ -90,10 +87,10 @@ func Worker(ctx context.Context, conf *FileCloser) {
 					"TempFile":     file.TempFile,
 					"Path":         file.Path,
 					"Hash":         fmt.Sprintf("%x", file.Hash),
-					"TempFileHash": hash,
+					"TempFileHash": fmt.Sprintf("%x", hash),
 				}).Errorf("Failed moving tempfile to new location: %v", err)
 				dbentry.Success = false
-				db.Save(&dbentry)
+				conf.db.Save(&dbentry)
 				continue
 			}
 
@@ -103,13 +100,14 @@ func Worker(ctx context.Context, conf *FileCloser) {
 				"NewPath": newpath,
 			}).Infof("Successfully finished writing file")
 			dbentry.Success = true
-			db.Save(&dbentry)
+			conf.db.Save(&dbentry)
 		}
 	}
 }
 
-func CreateFileCloser(ctx context.Context, outdir string, input chan structs.OpenTempFile, workercount int) {
+func CreateFileCloser(ctx context.Context, db *gorm.DB, outdir string, input chan *structs.OpenTempFile, workercount int) {
 	conf := FileCloser{
+		db:     db,
 		outdir: outdir,
 		input:  input,
 	}

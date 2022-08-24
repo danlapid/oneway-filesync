@@ -8,18 +8,15 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
 type QueueReader struct {
+	db     *gorm.DB
 	output chan database.File
 }
 
 func Worker(ctx context.Context, conf *QueueReader) {
-	db, err := database.OpenDatabase()
-	if err != nil {
-		logrus.Errorf("Error connecting to the database: %v", err)
-		return
-	}
 	ticker := time.NewTicker(300 * time.Millisecond)
 	for {
 		select {
@@ -27,10 +24,10 @@ func Worker(ctx context.Context, conf *QueueReader) {
 			return
 		case <-ticker.C:
 			var files []database.File
-			db.Where("Started = ? AND Finished = ?", false, false).Limit(100).Find(&files)
+			conf.db.Where("Started = ? AND Finished = ?", false, false).Limit(100).Find(&files)
 			for _, file := range files {
 				file.Started = true
-				err := db.Save(&file).Error
+				err := conf.db.Save(&file).Error
 				if err != nil {
 					logrus.WithFields(logrus.Fields{
 						"Path": file.Path,
@@ -44,8 +41,9 @@ func Worker(ctx context.Context, conf *QueueReader) {
 	}
 }
 
-func CreateQueueReader(ctx context.Context, output chan database.File) {
+func CreateQueueReader(ctx context.Context, db *gorm.DB, output chan database.File) {
 	conf := QueueReader{
+		db:     db,
 		output: output,
 	}
 	go Worker(ctx, &conf)

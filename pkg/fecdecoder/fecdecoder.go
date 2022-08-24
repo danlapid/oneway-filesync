@@ -20,7 +20,7 @@ type CacheKey struct {
 	DataOffset int64
 }
 type CacheValue struct {
-	Shares      chan structs.Chunk
+	Shares      chan *structs.Chunk
 	LastUpdated time.Time
 }
 
@@ -28,7 +28,7 @@ type FecDecoder struct {
 	required int
 	total    int
 	input    chan []structs.Chunk
-	output   chan structs.Chunk
+	output   chan *structs.Chunk
 }
 
 // m := make(map[string]int)
@@ -59,7 +59,7 @@ func Worker(ctx context.Context, conf *FecDecoder) {
 				continue
 			}
 
-			conf.output <- structs.Chunk{
+			conf.output <- &structs.Chunk{
 				Path:       chunks[0].Path,
 				Hash:       chunks[0].Hash,
 				DataOffset: chunks[0].DataOffset,
@@ -69,7 +69,7 @@ func Worker(ctx context.Context, conf *FecDecoder) {
 	}
 }
 
-func CreateFecDecoder(ctx context.Context, required int, total int, input chan []structs.Chunk, output chan structs.Chunk, workercount int) {
+func CreateFecDecoder(ctx context.Context, required int, total int, input chan []structs.Chunk, output chan *structs.Chunk, workercount int) {
 	conf := FecDecoder{
 		required: required,
 		total:    total,

@@ -12,7 +12,7 @@ import (
 type UdpSender struct {
 	ip    string
 	port  int
-	input chan structs.Chunk
+	input chan *structs.Chunk
 }
 
 func Worker(ctx context.Context, conf *UdpSender) {
@@ -40,7 +40,7 @@ func Worker(ctx context.Context, conf *UdpSender) {
 	}
 }
 
-func CreateSender(ctx context.Context, ip string, port int, input chan structs.Chunk, workercount int) {
+func CreateSender(ctx context.Context, ip string, port int, input chan *structs.Chunk, workercount int) {
 	conf := UdpSender{
 		ip:    ip,
 		port:  port,

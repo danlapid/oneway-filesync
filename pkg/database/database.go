@@ -1,12 +1,15 @@
 package database
 
 import (
+	"fmt"
 	"oneway-filesync/pkg/structs"
 	"os"
 	"path/filepath"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	gormlogger "gorm.io/gorm/logger"
+	"gorm.io/gorm/schema"
 )
 
 type File struct {
@@ -25,18 +28,24 @@ type ReceivedFile struct {
 // eventually we can choose to receive the user, password, host, database name
 // from the the configuration file, because we expect this database to be run locally
 // we leave it as defaults for now.
-func OpenDatabase() (*gorm.DB, error) {
+func OpenDatabase(tableprefix string) (*gorm.DB, error) {
 	dbURL := "postgres://postgres:postgres@localhost:5432/postgres"
-	return gorm.Open(postgres.Open(dbURL), &gorm.Config{})
+	return gorm.Open(postgres.Open(dbURL),
+		&gorm.Config{
+			NamingStrategy: schema.NamingStrategy{TablePrefix: tableprefix},
+			Logger:         gormlogger.Discard,
+		})
 }
 
-func ConfigureDatabase() error {
-	db, err := OpenDatabase()
-	if err != nil {
-		return err
-	}
-	err = db.AutoMigrate(&File{})
-	return err
+func ConfigureDatabase(db *gorm.DB) error {
+	return db.AutoMigrate(&File{})
+}
+
+func ClearDatabase(db *gorm.DB) error {
+	stmt := &gorm.Statement{DB: db}
+	stmt.Parse(&File{})
+	tablename := stmt.Schema.Table
+	return db.Exec(fmt.Sprintf("DELETE FROM %s", tablename)).Error
 }
 
 // Receives a file path, hashes it and pushes it into the database

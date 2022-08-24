@@ -3,7 +3,7 @@ package shareassembler
 import (
 	"context"
 	"oneway-filesync/pkg/structs"
-	"oneway-filesync/pkg/utils.go"
+	"oneway-filesync/pkg/utils"
 	"time"
 )
 
@@ -17,14 +17,14 @@ type CacheKey struct {
 	DataOffset int64
 }
 type CacheValue struct {
-	Shares      chan structs.Chunk
+	Shares      chan *structs.Chunk
 	LastUpdated time.Time
 }
 
 type ShareAssembler struct {
 	required int
 	total    int
-	input    chan structs.Chunk
+	input    chan *structs.Chunk
 	output   chan []structs.Chunk
 	cache    utils.RWMutexMap[CacheKey, *CacheValue]
 }
@@ -57,7 +57,7 @@ func Worker(ctx context.Context, conf *ShareAssembler) {
 		case chunk := <-conf.input:
 			value, _ := conf.cache.LoadOrStore(
 				CacheKey{Hash: chunk.Hash, DataOffset: chunk.DataOffset},
-				&CacheValue{Shares: make(chan structs.Chunk, conf.total), LastUpdated: time.Now()})
+				&CacheValue{Shares: make(chan *structs.Chunk, conf.total), LastUpdated: time.Now()})
 			value.Shares <- chunk
 			value.LastUpdated = time.Now()
 			conf.cache.Store(CacheKey{Hash: chunk.Hash, DataOffset: chunk.DataOffset}, value)
@@ -67,7 +67,7 @@ func Worker(ctx context.Context, conf *ShareAssembler) {
 					n := len(value.Shares)
 					var shares []structs.Chunk
 					for i := 0; i < n; i++ {
-						shares = append(shares, <-value.Shares)
+						shares = append(shares, *<-value.Shares)
 					}
 					conf.output <- shares
 				}
@@ -76,7 +76,7 @@ func Worker(ctx context.Context, conf *ShareAssembler) {
 	}
 }
 
-func CreateShareAssembler(ctx context.Context, required int, total int, input chan structs.Chunk, output chan []structs.Chunk, workercount int) {
+func CreateShareAssembler(ctx context.Context, required int, total int, input chan *structs.Chunk, output chan []structs.Chunk, workercount int) {
 	conf := ShareAssembler{
 		required: required,
 		total:    total,

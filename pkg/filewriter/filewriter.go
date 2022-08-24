@@ -4,8 +4,9 @@ import (
 	"context"
 	"fmt"
 	"oneway-filesync/pkg/structs"
-	"oneway-filesync/pkg/utils.go"
+	"oneway-filesync/pkg/utils"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -14,8 +15,8 @@ import (
 
 type FileWriter struct {
 	tempdir string
-	input   chan structs.Chunk
-	output  chan structs.OpenTempFile
+	input   chan *structs.Chunk
+	output  chan *structs.OpenTempFile
 	cache   utils.RWMutexMap[string, *structs.OpenTempFile]
 }
 
@@ -33,7 +34,7 @@ func Manager(ctx context.Context, conf *FileWriter) {
 			conf.cache.Range(func(tempfilepath string, value *structs.OpenTempFile) bool {
 				if time.Since(value.LastUpdated).Seconds() > 30 {
 					conf.cache.Delete(tempfilepath)
-					conf.output <- *value
+					conf.output <- value
 				}
 				return true
 			})
@@ -47,7 +48,11 @@ func Worker(ctx context.Context, conf *FileWriter) {
 		case <-ctx.Done():
 			return
 		case chunk := <-conf.input:
-			tempfile, err := os.CreateTemp(conf.tempdir, fmt.Sprintf("%s___%x___*.tmp", strings.ReplaceAll(chunk.Path, "/", "_"), chunk.Hash))
+			tempfile, err := os.OpenFile(
+				filepath.Join(conf.tempdir, fmt.Sprintf("%s___%x.tmp", strings.ReplaceAll(chunk.Path, "/", "_"), chunk.Hash)),
+				os.O_RDWR|os.O_CREATE,
+				0600,
+			)
 			tempfilepath := tempfile.Name()
 			if err != nil {
 				logrus.WithFields(logrus.Fields{
@@ -78,7 +83,7 @@ func Worker(ctx context.Context, conf *FileWriter) {
 	}
 }
 
-func CreateFileWriter(ctx context.Context, tempdir string, input chan structs.Chunk, output chan structs.OpenTempFile, workercount int) {
+func CreateFileWriter(ctx context.Context, tempdir string, input chan *structs.Chunk, output chan *structs.OpenTempFile, workercount int) {
 	conf := FileWriter{
 		tempdir: tempdir,
 		input:   input,

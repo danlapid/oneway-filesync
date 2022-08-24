@@ -13,8 +13,8 @@ type FecEncoder struct {
 	chunksize int
 	required  int
 	total     int
-	input     chan structs.Chunk
-	output    chan structs.Chunk
+	input     chan *structs.Chunk
+	output    chan *structs.Chunk
 }
 
 func Worker(ctx context.Context, conf *FecEncoder) {
@@ -57,14 +57,14 @@ func Worker(ctx context.Context, conf *FecEncoder) {
 					Data:        sharedata,
 				}
 
-				conf.output <- chunk
+				conf.output <- &chunk
 			}
 
 		}
 	}
 }
 
-func CreateFecEncoder(ctx context.Context, chunksize int, required int, total int, input chan structs.Chunk, output chan structs.Chunk, workercount int) {
+func CreateFecEncoder(ctx context.Context, chunksize int, required int, total int, input chan *structs.Chunk, output chan *structs.Chunk, workercount int) {
 	conf := FecEncoder{
 		chunksize: chunksize,
 		required:  required,

@@ -10,21 +10,18 @@ import (
 	"os"
 
 	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
 type FileReader struct {
+	db        *gorm.DB
 	chunksize int
 	required  int
 	input     chan database.File
-	output    chan structs.Chunk
+	output    chan *structs.Chunk
 }
 
 func Worker(ctx context.Context, conf *FileReader) {
-	db, err := database.OpenDatabase()
-	if err != nil {
-		logrus.Errorf("Error connecting to the database: %v", err)
-		return
-	}
 	for {
 		select {
 		case <-ctx.Done():
@@ -72,16 +69,17 @@ func Worker(ctx context.Context, conf *FileReader) {
 					Data:       data[:n],
 				}
 				copy(chunk.Hash[:], file.Hash)
-				conf.output <- chunk
+				conf.output <- &chunk
 				offset += int64(n)
 			}
+			// TODO: this does not mean a successfull finish
 			file.Finished = true
 			file.Success = success
 			logrus.WithFields(logrus.Fields{
 				"Path": file.Path,
 				"Hash": fmt.Sprintf("%x", file.Hash),
 			}).Infof("File finished sending, Success=%t", success)
-			err = db.Save(&file).Error
+			err = conf.db.Save(&file).Error
 			if err != nil {
 				logrus.WithFields(logrus.Fields{
 					"Path": file.Path,
@@ -92,8 +90,9 @@ func Worker(ctx context.Context, conf *FileReader) {
 	}
 }
 
-func CreateFileReader(ctx context.Context, chunksize int, required int, input chan database.File, output chan structs.Chunk, workercount int) {
+func CreateFileReader(ctx context.Context, db *gorm.DB, chunksize int, required int, input chan database.File, output chan *structs.Chunk, workercount int) {
 	conf := FileReader{
+		db:        db,
 		chunksize: chunksize,
 		required:  required,
 		input:     input,

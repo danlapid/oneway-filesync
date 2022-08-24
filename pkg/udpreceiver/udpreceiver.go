@@ -2,6 +2,7 @@ package udpreceiver
 
 import (
 	"context"
+	"errors"
 	"net"
 	"oneway-filesync/pkg/structs"
 
@@ -11,7 +12,7 @@ import (
 type UdpReceiver struct {
 	conn      *net.UDPConn
 	chunksize int
-	output    chan structs.Chunk
+	output    chan *structs.Chunk
 }
 
 func Worker(ctx context.Context, conf *UdpReceiver) {
@@ -25,6 +26,10 @@ func Worker(ctx context.Context, conf *UdpReceiver) {
 		default:
 			n, _, err := conf.conn.ReadFromUDP(buf)
 			if err != nil {
+				if errors.Is(err, net.ErrClosed) {
+					// conn.Close was called
+					continue
+				}
 				logrus.Errorf("Error reading from socket:  %v", err)
 				continue
 			}
@@ -33,12 +38,12 @@ func Worker(ctx context.Context, conf *UdpReceiver) {
 				logrus.Errorf("Error decoding chunk:  %v", err)
 				continue
 			}
-			conf.output <- chunk
+			conf.output <- &chunk
 		}
 	}
 }
 
-func CreateReceiver(ctx context.Context, ip string, port int, chunksize int, output chan structs.Chunk, workercount int) {
+func CreateReceiver(ctx context.Context, ip string, port int, chunksize int, output chan *structs.Chunk, workercount int) {
 	addr := net.UDPAddr{
 		IP:   net.ParseIP(ip),
 		Port: port,

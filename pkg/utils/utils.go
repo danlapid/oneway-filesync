@@ -1,8 +1,46 @@
 package utils
 
 import (
+	"fmt"
+	"io"
+	"os"
+	"runtime"
+	"strings"
 	"sync"
+
+	"github.com/sirupsen/logrus"
 )
+
+func formatFilePath(path string) string {
+	arr := strings.Split(path, "/")
+	return arr[len(arr)-1]
+}
+
+func InitializeLogging(logFile string) {
+	var file, err = os.OpenFile(logFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		fmt.Println("Could Not Open Log File : " + err.Error())
+		return
+	}
+
+	logrus.SetReportCaller(true)
+	formatter := &logrus.TextFormatter{
+		TimestampFormat:        "2006-02-01 15:04:05", // the "time" field configuration
+		FullTimestamp:          true,
+		DisableLevelTruncation: true, // log level field configuration
+		CallerPrettyfier: func(f *runtime.Frame) (string, string) {
+			// this function is required when you want to introduce your custom format.
+			// In my case I wanted file and line to look like this `file="engine.go:141`
+			// but f.File provides a full path along with the file name.
+			// So in `formatFilePath()` function I just trimmed everything before the file name
+			// and added a line number in the end
+			return "", fmt.Sprintf("%s:%d", formatFilePath(f.File), f.Line)
+		},
+	}
+	logrus.SetFormatter(formatter)
+
+	logrus.SetOutput(io.MultiWriter(file, os.Stdout))
+}
 
 // Taken from here: https://github.com/golang/go/blob/912f0750472dd4f674b69ca1616bfaf377af1805/src/sync/map_reference_test.go#L25
 // RWMutexMap is an implementation of mapInterface using a sync.RWMutex.
