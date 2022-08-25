@@ -198,5 +198,6 @@ func setupTest(t *testing.T, conf config.Config) (*gorm.DB, *gorm.DB, func()) {
 		os.RemoveAll(conf.OutDir)
 		database.ClearDatabase(receiverdb)
 		database.ClearDatabase(senderdb)
+		os.Remove(database.DBFILE)
 	}
 }

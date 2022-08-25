@@ -24,12 +24,14 @@ type ReceivedFile struct {
 	File
 }
 
+const DBFILE = "gorm.db"
+
 // Opens a connection to the database,
 // eventually we can choose to receive the user, password, host, database name
 // from the the configuration file, because we expect this database to be run locally
 // we leave it as defaults for now.
 func OpenDatabase(tableprefix string) (*gorm.DB, error) {
-	return gorm.Open(sqlite.Open("gorm.db"),
+	return gorm.Open(sqlite.Open(DBFILE),
 		&gorm.Config{
 			NamingStrategy: schema.NamingStrategy{TablePrefix: tableprefix},
 			Logger:         gormlogger.Discard,
