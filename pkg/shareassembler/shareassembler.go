@@ -4,6 +4,8 @@ import (
 	"context"
 	"oneway-filesync/pkg/structs"
 	"oneway-filesync/pkg/utils"
+	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -18,7 +20,8 @@ type CacheKey struct {
 }
 type CacheValue struct {
 	Shares      chan *structs.Chunk
-	LastUpdated time.Time
+	LastUpdated atomic.Int64
+	Lock        sync.Mutex
 }
 
 type ShareAssembler struct {
@@ -40,7 +43,7 @@ func Manager(ctx context.Context, conf *ShareAssembler) {
 			return
 		case <-ticker.C:
 			conf.cache.Range(func(key CacheKey, value *CacheValue) bool {
-				if time.Since(value.LastUpdated).Seconds() > 10 {
+				if (time.Now().Unix() - value.LastUpdated.Load()) > 10 {
 					conf.cache.Delete(key)
 				}
 				return true
@@ -55,21 +58,25 @@ func Worker(ctx context.Context, conf *ShareAssembler) {
 		case <-ctx.Done():
 			return
 		case chunk := <-conf.input:
+			timenow := atomic.Int64{}
+			timenow.Store(time.Now().Unix())
 			value, _ := conf.cache.LoadOrStore(
 				CacheKey{Hash: chunk.Hash, DataOffset: chunk.DataOffset},
-				&CacheValue{Shares: make(chan *structs.Chunk, conf.total), LastUpdated: time.Now()})
+				&CacheValue{Shares: make(chan *structs.Chunk, conf.total*2), LastUpdated: timenow})
 			value.Shares <- chunk
-			value.LastUpdated = time.Now()
-			conf.cache.Store(CacheKey{Hash: chunk.Hash, DataOffset: chunk.DataOffset}, value)
-			if len(value.Shares) >= conf.required {
-				value, loaded := conf.cache.LoadAndDelete(CacheKey{Hash: chunk.Hash, DataOffset: chunk.DataOffset})
-				if loaded && (len(value.Shares) >= conf.required) {
-					n := len(value.Shares)
+			value.LastUpdated.Store(timenow.Load())
+
+			aquired := value.Lock.TryLock()
+			if aquired {
+				if len(value.Shares) >= conf.required {
 					var shares []*structs.Chunk
-					for i := 0; i < n; i++ {
+					for i := 0; i < conf.required; i++ {
 						shares = append(shares, <-value.Shares)
 					}
+					value.Lock.Unlock()
 					conf.output <- shares
+				} else {
+					value.Lock.Unlock()
 				}
 			}
 		}

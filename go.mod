@@ -8,6 +8,7 @@ require (
 	github.com/sirupsen/logrus v1.9.0
 	github.com/zhuangsirui/binpacker v2.0.0+incompatible
 	go.uber.org/ratelimit v0.2.0
+	golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8
 	gorm.io/driver/sqlite v1.3.6
 	gorm.io/gorm v1.23.8
 )
@@ -18,5 +19,4 @@ require (
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/klauspost/cpuid/v2 v2.0.14 // indirect
 	github.com/mattn/go-sqlite3 v1.14.12 // indirect
-	golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8 // indirect
 )
