@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"gorm.io/driver/postgres"
+	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	gormlogger "gorm.io/gorm/logger"
 	"gorm.io/gorm/schema"
@@ -29,8 +29,7 @@ type ReceivedFile struct {
 // from the the configuration file, because we expect this database to be run locally
 // we leave it as defaults for now.
 func OpenDatabase(tableprefix string) (*gorm.DB, error) {
-	dbURL := "postgres://postgres:postgres@localhost:5432/postgres"
-	return gorm.Open(postgres.Open(dbURL),
+	return gorm.Open(sqlite.Open("gorm.db"),
 		&gorm.Config{
 			NamingStrategy: schema.NamingStrategy{TablePrefix: tableprefix},
 			Logger:         gormlogger.Discard,

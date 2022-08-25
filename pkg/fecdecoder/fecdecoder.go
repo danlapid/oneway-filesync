@@ -6,8 +6,8 @@ import (
 	"oneway-filesync/pkg/structs"
 	"time"
 
+	"github.com/klauspost/reedsolomon"
 	"github.com/sirupsen/logrus"
-	"github.com/vivint/infectious"
 )
 
 // Cache docs:
@@ -32,7 +32,7 @@ type FecDecoder struct {
 }
 
 func Worker(ctx context.Context, conf *FecDecoder) {
-	fec, err := infectious.NewFEC(conf.required, conf.total)
+	fec, err := reedsolomon.New(conf.required, conf.total-conf.required)
 	if err != nil {
 		logrus.Errorf("Error creating fec object: %v", err)
 		return
@@ -42,14 +42,11 @@ func Worker(ctx context.Context, conf *FecDecoder) {
 		case <-ctx.Done():
 			return
 		case chunks := <-conf.input:
-			shares := make([]infectious.Share, len(chunks))
-			for i, chunk := range chunks {
-				shares[i] = infectious.Share{
-					Number: int(chunk.ShareIndex),
-					Data:   chunk.Data,
-				}
+			shares := make([][]byte, conf.total)
+			for _, chunk := range chunks {
+				shares[chunk.ShareIndex] = chunk.Data
 			}
-			data, err := fec.Decode(nil, shares)
+			err := fec.ReconstructData(shares)
 			if err != nil {
 				logrus.WithFields(logrus.Fields{
 					"Path": chunks[0].Path,
@@ -58,6 +55,10 @@ func Worker(ctx context.Context, conf *FecDecoder) {
 				continue
 			}
 
+			data := make([]byte, len(shares[0])*conf.required)
+			for i, shard := range shares[:conf.required] {
+				copy(data[i*len(shares[0]):], shard)
+			}
 			conf.output <- &structs.Chunk{
 				Path:       chunks[0].Path,
 				Hash:       chunks[0].Hash,

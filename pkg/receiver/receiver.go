@@ -12,8 +12,6 @@ import (
 	"os"
 	"path/filepath"
 
-	_ "net/http/pprof"
-
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -26,10 +24,10 @@ func Receiver(ctx context.Context, db *gorm.DB, conf config.Config) {
 		return
 	}
 
-	shares_chan := make(chan *structs.Chunk, 1)
-	sharelist_chan := make(chan []*structs.Chunk, 1)
-	chunks_chan := make(chan *structs.Chunk, 1)
-	finishedfiles_chan := make(chan *structs.OpenTempFile, 10)
+	shares_chan := make(chan *structs.Chunk, 100)
+	sharelist_chan := make(chan []*structs.Chunk, 100)
+	chunks_chan := make(chan *structs.Chunk, 100)
+	finishedfiles_chan := make(chan *structs.OpenTempFile, 5)
 
 	udpreceiver.CreateUdpReceiver(ctx, conf.ReceiverIP, conf.ReceiverPort, conf.ChunkSize, shares_chan, 20)
 	shareassembler.CreateShareAssembler(ctx, conf.ChunkFecRequired, conf.ChunkFecTotal, shares_chan, sharelist_chan, 20)

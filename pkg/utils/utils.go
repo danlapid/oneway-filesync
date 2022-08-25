@@ -116,3 +116,6 @@ func (m *RWMutexMap[K, V]) Range(f func(key K, value V) (shouldContinue bool)) {
 		}
 	}
 }
+func (m *RWMutexMap[K, V]) Len() int {
+	return len(m.dirty)
+}

@@ -30,17 +30,17 @@ type ShareAssembler struct {
 }
 
 // The manager acts as a "Garbage collector"
-// every chunk that didn't get any new shares for the past 60 seconds can be
+// every chunk that didn't get any new shares for the past 10 seconds can be
 // assumed to never again receive more shares and deleted
 func Manager(ctx context.Context, conf *ShareAssembler) {
-	ticker := time.NewTicker(60 * time.Second)
+	ticker := time.NewTicker(5 * time.Second)
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
 			conf.cache.Range(func(key CacheKey, value *CacheValue) bool {
-				if time.Since(value.LastUpdated).Seconds() > 60 {
+				if time.Since(value.LastUpdated).Seconds() > 10 {
 					conf.cache.Delete(key)
 				}
 				return true
