@@ -116,7 +116,7 @@ func TestVeryLargeFile(t *testing.T) {
 	conf := config.Config{
 		ReceiverIP:       "127.0.0.1",
 		ReceiverPort:     5000,
-		BandwidthLimit:   25 * 1024 * 1024,
+		BandwidthLimit:   10 * 1024 * 1024,
 		ChunkSize:        8192,
 		ChunkFecRequired: 5,
 		ChunkFecTotal:    10,
