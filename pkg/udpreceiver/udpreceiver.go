@@ -5,12 +5,11 @@ import (
 	"errors"
 	"net"
 	"oneway-filesync/pkg/structs"
+	"oneway-filesync/pkg/utils"
 	"runtime"
-	"syscall"
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"golang.org/x/sys/unix"
 )
 
 type UdpReceiver struct {
@@ -20,32 +19,20 @@ type UdpReceiver struct {
 }
 
 func manager(ctx context.Context, conf *UdpReceiver) {
-	var FIONREAD uint = 0
-	if runtime.GOOS == "linux" {
-		FIONREAD = 0x541B
-	} else if runtime.GOOS == "darwin" {
-		FIONREAD = 0x4004667f
-	} else if runtime.GOOS == "windows" {
-		FIONREAD = 0x4008667f
-	} else {
+	if runtime.GOOS != "linux" && runtime.GOOS != "darwin" {
 		logrus.Infof("Buffers fill detection not supported on the current OS")
 		return
 	}
+
 	ticker := time.NewTicker(200 * time.Millisecond)
 	rawconn, err := conf.conn.SyscallConn()
 	if err != nil {
 		logrus.Errorf("Error getting raw socket: %v", err)
 		return
 	}
-	var bufsize int
-	err2 := rawconn.Control(func(fd uintptr) {
-		bufsize, err = unix.GetsockoptInt(int(fd), syscall.SOL_SOCKET, syscall.SO_RCVBUF)
-	})
-	if err2 != nil {
-		logrus.Errorf("Error running Control for FIONREAD: %v", err2)
-	}
+	bufsize, err := utils.GetReadBuffer(rawconn)
 	if err != nil {
-		logrus.Errorf("Error getting FIONREAD: %v", err)
+		logrus.Errorf("Error getting read buffer size: %v", err)
 	}
 
 	for {
@@ -53,15 +40,9 @@ func manager(ctx context.Context, conf *UdpReceiver) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			var toread int = 0
-			err2 := rawconn.Control(func(fd uintptr) {
-				toread, err = unix.IoctlGetInt(int(fd), FIONREAD)
-			})
-			if err2 != nil {
-				logrus.Errorf("Error running Control for FIONREAD: %v", err2)
-			}
+			toread, err := utils.GetAvailableBytes(rawconn)
 			if err != nil {
-				logrus.Errorf("Error getting FIONREAD: %v", err)
+				logrus.Errorf("Error getting available bytes on socket: %v", err)
 			}
 
 			if float64(toread)/float64(bufsize) > 0.8 {
