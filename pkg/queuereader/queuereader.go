@@ -16,7 +16,7 @@ type QueueReader struct {
 	output chan database.File
 }
 
-func Worker(ctx context.Context, conf *QueueReader) {
+func worker(ctx context.Context, conf *QueueReader) {
 	ticker := time.NewTicker(300 * time.Millisecond)
 	for {
 		select {
@@ -46,5 +46,5 @@ func CreateQueueReader(ctx context.Context, db *gorm.DB, output chan database.Fi
 		db:     db,
 		output: output,
 	}
-	go Worker(ctx, &conf)
+	go worker(ctx, &conf)
 }

@@ -15,7 +15,7 @@ type UdpSender struct {
 	input chan *structs.Chunk
 }
 
-func Worker(ctx context.Context, conf *UdpSender) {
+func worker(ctx context.Context, conf *UdpSender) {
 	conn, err := net.Dial("udp", fmt.Sprintf("%s:%d", conf.ip, conf.port))
 	if err != nil {
 		logrus.Errorf("Error creating udp socket: %v", err)
@@ -47,6 +47,6 @@ func CreateSender(ctx context.Context, ip string, port int, input chan *structs.
 		input: input,
 	}
 	for i := 0; i < workercount; i++ {
-		go Worker(ctx, &conf)
+		go worker(ctx, &conf)
 	}
 }

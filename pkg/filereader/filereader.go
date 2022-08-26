@@ -21,7 +21,7 @@ type FileReader struct {
 	output    chan *structs.Chunk
 }
 
-func Worker(ctx context.Context, conf *FileReader) {
+func worker(ctx context.Context, conf *FileReader) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -99,6 +99,6 @@ func CreateFileReader(ctx context.Context, db *gorm.DB, chunksize int, required 
 		output:    output,
 	}
 	for i := 0; i < workercount; i++ {
-		go Worker(ctx, &conf)
+		go worker(ctx, &conf)
 	}
 }

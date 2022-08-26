@@ -24,7 +24,7 @@ type FileWriter struct {
 // Since we can never really be sure all the chunks arrive
 // But 30 seconds after no more chunks arrive we can be rather certain
 // no more chunks will arrive
-func Manager(ctx context.Context, conf *FileWriter) {
+func manager(ctx context.Context, conf *FileWriter) {
 	ticker := time.NewTicker(15 * time.Second)
 	for {
 		select {
@@ -42,7 +42,7 @@ func Manager(ctx context.Context, conf *FileWriter) {
 	}
 }
 
-func Worker(ctx context.Context, conf *FileWriter) {
+func worker(ctx context.Context, conf *FileWriter) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -91,7 +91,7 @@ func CreateFileWriter(ctx context.Context, tempdir string, input chan *structs.C
 		cache:   utils.RWMutexMap[string, *structs.OpenTempFile]{},
 	}
 	for i := 0; i < workercount; i++ {
-		go Worker(ctx, &conf)
+		go worker(ctx, &conf)
 	}
-	go Manager(ctx, &conf)
+	go manager(ctx, &conf)
 }

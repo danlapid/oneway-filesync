@@ -18,7 +18,7 @@ type FileCloser struct {
 	input  chan *structs.OpenTempFile
 }
 
-func Worker(ctx context.Context, conf *FileCloser) {
+func worker(ctx context.Context, conf *FileCloser) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -112,6 +112,6 @@ func CreateFileCloser(ctx context.Context, db *gorm.DB, outdir string, input cha
 		input:  input,
 	}
 	for i := 0; i < workercount; i++ {
-		go Worker(ctx, &conf)
+		go worker(ctx, &conf)
 	}
 }

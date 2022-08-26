@@ -35,7 +35,7 @@ type ShareAssembler struct {
 // The manager acts as a "Garbage collector"
 // every chunk that didn't get any new shares for the past 10 seconds can be
 // assumed to never again receive more shares and deleted
-func Manager(ctx context.Context, conf *ShareAssembler) {
+func manager(ctx context.Context, conf *ShareAssembler) {
 	ticker := time.NewTicker(5 * time.Second)
 	for {
 		select {
@@ -43,7 +43,8 @@ func Manager(ctx context.Context, conf *ShareAssembler) {
 			return
 		case <-ticker.C:
 			conf.cache.Range(func(key CacheKey, value *CacheValue) bool {
-				if (time.Now().Unix() - value.LastUpdated.Load()) > 10 {
+				lastUpdated := value.LastUpdated.Load()
+				if lastUpdated != 0 && (time.Now().Unix()-lastUpdated) > 10 {
 					conf.cache.Delete(key)
 				}
 				return true
@@ -52,19 +53,17 @@ func Manager(ctx context.Context, conf *ShareAssembler) {
 	}
 }
 
-func Worker(ctx context.Context, conf *ShareAssembler) {
+func worker(ctx context.Context, conf *ShareAssembler) {
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case chunk := <-conf.input:
-			timenow := atomic.Int64{}
-			timenow.Store(time.Now().Unix())
 			value, _ := conf.cache.LoadOrStore(
 				CacheKey{Hash: chunk.Hash, DataOffset: chunk.DataOffset},
-				&CacheValue{Shares: make(chan *structs.Chunk, conf.total*2), LastUpdated: timenow})
+				&CacheValue{Shares: make(chan *structs.Chunk, conf.total*2)})
 			value.Shares <- chunk
-			value.LastUpdated.Store(timenow.Load())
+			value.LastUpdated.Store(time.Now().Unix())
 
 			aquired := value.Lock.TryLock()
 			if aquired {
@@ -92,7 +91,7 @@ func CreateShareAssembler(ctx context.Context, required int, total int, input ch
 		cache:    utils.RWMutexMap[CacheKey, *CacheValue]{},
 	}
 	for i := 0; i < workercount; i++ {
-		go Worker(ctx, &conf)
+		go worker(ctx, &conf)
 	}
-	go Manager(ctx, &conf)
+	go manager(ctx, &conf)
 }

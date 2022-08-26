@@ -13,7 +13,7 @@ type BandwidthLimiter struct {
 	output chan *structs.Chunk
 }
 
-func Worker(ctx context.Context, conf *BandwidthLimiter) {
+func worker(ctx context.Context, conf *BandwidthLimiter) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -31,5 +31,5 @@ func CreateBandwidthLimiter(ctx context.Context, chunks_per_sec int, input chan 
 		input:  input,
 		output: output,
 	}
-	go Worker(ctx, &conf)
+	go worker(ctx, &conf)
 }

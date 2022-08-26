@@ -31,7 +31,7 @@ type FecDecoder struct {
 	output   chan *structs.Chunk
 }
 
-func Worker(ctx context.Context, conf *FecDecoder) {
+func worker(ctx context.Context, conf *FecDecoder) {
 	fec, err := reedsolomon.New(conf.required, conf.total-conf.required)
 	if err != nil {
 		logrus.Errorf("Error creating fec object: %v", err)
@@ -77,6 +77,6 @@ func CreateFecDecoder(ctx context.Context, required int, total int, input chan [
 		output:   output,
 	}
 	for i := 0; i < workercount; i++ {
-		go Worker(ctx, &conf)
+		go worker(ctx, &conf)
 	}
 }

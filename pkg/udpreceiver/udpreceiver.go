@@ -19,7 +19,7 @@ type UdpReceiver struct {
 	output    chan *structs.Chunk
 }
 
-func Manager(ctx context.Context, conf *UdpReceiver) {
+func manager(ctx context.Context, conf *UdpReceiver) {
 	var FIONREAD uint = 0
 	if runtime.GOOS == "linux" {
 		FIONREAD = 0x541B
@@ -69,7 +69,7 @@ func Manager(ctx context.Context, conf *UdpReceiver) {
 	}
 }
 
-func Worker(ctx context.Context, conf *UdpReceiver) {
+func worker(ctx context.Context, conf *UdpReceiver) {
 	buf := make([]byte, conf.chunksize)
 
 	for {
@@ -119,7 +119,7 @@ func CreateUdpReceiver(ctx context.Context, ip string, port int, chunksize int, 
 		output:    output,
 	}
 	for i := 0; i < workercount; i++ {
-		go Worker(ctx, &conf)
+		go worker(ctx, &conf)
 	}
-	go Manager(ctx, &conf)
+	go manager(ctx, &conf)
 }

@@ -22,7 +22,7 @@ type FecEncoder struct {
 // These are encoding using reed solomon FEC
 // Then we send each share seperately
 // At the end they are combined and concatenated to form the file.
-func Worker(ctx context.Context, conf *FecEncoder) {
+func worker(ctx context.Context, conf *FecEncoder) {
 	fec, err := reedsolomon.New(conf.required, conf.total-conf.required)
 	if err != nil {
 		logrus.Errorf("Error creating fec object: %v", err)
@@ -80,6 +80,6 @@ func CreateFecEncoder(ctx context.Context, chunksize int, required int, total in
 		output:    output,
 	}
 	for i := 0; i < workercount; i++ {
-		go Worker(ctx, &conf)
+		go worker(ctx, &conf)
 	}
 }
