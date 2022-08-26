@@ -1,4 +1,4 @@
-name: Go
+name: Build
 
 on:
   push:
@@ -19,8 +19,9 @@ jobs:
         with:
           go-version: ${{ matrix.go }}
 
-      - name: Build
-        run: go build -v ./...
-
-      - name: Test
-        run: go test -v ./...
+      - name: build
+        run: |
+          set -x
+          for a in $(go tool dist list); do
+            GOOS=${a%%/*} GOARCH=${a#*/} go build ./cmd/...
+          done

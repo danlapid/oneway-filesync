@@ -25,6 +25,8 @@ func manager(ctx context.Context, conf *UdpReceiver) {
 		FIONREAD = 0x541B
 	} else if runtime.GOOS == "darwin" {
 		FIONREAD = 0x4004667f
+	} else if runtime.GOOS == "windows" {
+		FIONREAD = 0x4008667f
 	} else {
 		logrus.Infof("Buffers fill detection not supported on the current OS")
 		return
