@@ -53,9 +53,9 @@ func worker(ctx context.Context, conf *fileCloserConfig) {
 				conf.db.Save(&dbentry)
 				continue
 			}
-			defer f.Close()
 
 			hash, err := structs.HashFile(f)
+			err2 := f.Close()
 			if err != nil {
 				logrus.WithFields(logrus.Fields{
 					"TempFile": file.TempFile,
@@ -76,6 +76,13 @@ func worker(ctx context.Context, conf *fileCloserConfig) {
 				dbentry.Success = false
 				conf.db.Save(&dbentry)
 				continue
+			}
+			if err2 != nil {
+				logrus.WithFields(logrus.Fields{
+					"TempFile": file.TempFile,
+					"Path":     file.Path,
+					"Hash":     fmt.Sprintf("%x", file.Hash),
+				}).Errorf("Error ckisubg tempfile: %v", err)
 			}
 
 			newpath := filepath.Join(conf.outdir, normalizePath(file.Path))

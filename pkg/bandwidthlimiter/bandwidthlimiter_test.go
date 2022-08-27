@@ -18,7 +18,6 @@ func TestCreateBandwidthLimiter(t *testing.T) {
 		args args
 	}{
 		{name: "test1", args: args{chunks: 100, chunks_per_sec: 10}},
-		{name: "test2", args: args{chunks: 100000, chunks_per_sec: 10000}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

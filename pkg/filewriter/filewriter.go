@@ -68,7 +68,7 @@ func worker(ctx context.Context, conf *fileWriterConfig) {
 			}
 
 			_, err = tempfile.WriteAt(chunk.Data, chunk.DataOffset)
-			tempfile.Close() // Not using defer because of overhead concerns
+			err2 := tempfile.Close() // Not using defer because of overhead concerns
 			if err != nil {
 				logrus.WithFields(logrus.Fields{
 					"TempFile": tempfilepath,
@@ -76,6 +76,14 @@ func worker(ctx context.Context, conf *fileWriterConfig) {
 					"Hash":     fmt.Sprintf("%x", chunk.Hash),
 				}).Errorf("Error writing to tempfile: %v", err)
 				continue
+			}
+
+			if err2 != nil {
+				logrus.WithFields(logrus.Fields{
+					"TempFile": tempfilepath,
+					"Path":     chunk.Path,
+					"Hash":     fmt.Sprintf("%x", chunk.Hash),
+				}).Errorf("Error closing tempfile: %v", err)
 			}
 
 			conf.cache.Store(tempfilepath, &structs.OpenTempFile{
