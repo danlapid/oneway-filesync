@@ -9,7 +9,6 @@ import (
 )
 
 func TestCreateBandwidthLimiter(t *testing.T) {
-	t.Parallel()
 	type args struct {
 		chunks         int
 		chunks_per_sec int
@@ -22,9 +21,7 @@ func TestCreateBandwidthLimiter(t *testing.T) {
 		{name: "test2", args: args{chunks: 1000000, chunks_per_sec: 5000000}},
 	}
 	for _, tt := range tests {
-		tt := tt // https://gist.github.com/posener/92a55c4cd441fc5e5e85f27bca008721
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
 			expected := float64(tt.args.chunks) / float64(tt.args.chunks_per_sec)
 			ch_in := make(chan *structs.Chunk, tt.args.chunks)
 			ch_out := make(chan *structs.Chunk, tt.args.chunks)
