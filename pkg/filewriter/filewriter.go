@@ -13,6 +13,14 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+func pathReplace(path string) string {
+	newpath := path
+	newpath = strings.ReplaceAll(newpath, "/", "_")
+	newpath = strings.ReplaceAll(newpath, "\\", "_")
+	newpath = strings.ReplaceAll(newpath, ":", "_")
+	return newpath
+}
+
 type fileWriterConfig struct {
 	tempdir string
 	input   chan *structs.Chunk
@@ -48,7 +56,7 @@ func worker(ctx context.Context, conf *fileWriterConfig) {
 		case <-ctx.Done():
 			return
 		case chunk := <-conf.input:
-			tempfilepath := filepath.Join(conf.tempdir, fmt.Sprintf("%s___%x.tmp", strings.ReplaceAll(chunk.Path, "/", "_"), chunk.Hash))
+			tempfilepath := filepath.Join(conf.tempdir, fmt.Sprintf("%s___%x.tmp", pathReplace(chunk.Path), chunk.Hash))
 			tempfile, err := os.OpenFile(tempfilepath, os.O_RDWR|os.O_CREATE, 0600)
 			if err != nil {
 				logrus.WithFields(logrus.Fields{

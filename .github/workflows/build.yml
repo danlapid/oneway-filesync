@@ -24,6 +24,8 @@ jobs:
           go-version: ${{ matrix.go }}
 
       - name: build
+        env:
+          CGO_ENABLED: 1
         run: |
           GOOS=darwin GOARCH=amd64 go build ./cmd/...
           GOOS=darwin GOARCH=arm64 go build ./cmd/...
