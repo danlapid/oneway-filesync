@@ -7,10 +7,21 @@ import (
 	"oneway-filesync/pkg/structs"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
+
+func normalizePath(path string) string {
+	newpath := strings.ReplaceAll(path, ":", "")
+	if strings.Contains(newpath, "\\") {
+		return filepath.Join(strings.Split(newpath, "\\")...)
+	} else {
+
+		return filepath.Join(strings.Split(newpath, "/")...)
+	}
+}
 
 type fileCloserConfig struct {
 	db     *gorm.DB
@@ -67,7 +78,7 @@ func worker(ctx context.Context, conf *fileCloserConfig) {
 				continue
 			}
 
-			newpath := filepath.Join(conf.outdir, file.Path)
+			newpath := filepath.Join(conf.outdir, normalizePath(file.Path))
 			err = os.MkdirAll(filepath.Dir(newpath), os.ModePerm)
 			if err != nil {
 				logrus.WithFields(logrus.Fields{
