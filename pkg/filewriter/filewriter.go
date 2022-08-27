@@ -48,7 +48,7 @@ func worker(ctx context.Context, conf *FileWriter) {
 		case <-ctx.Done():
 			return
 		case chunk := <-conf.input:
-                        tempfilepath := filepath.Join(conf.tempdir, fmt.Sprintf("%s___%x.tmp", strings.ReplaceAll(chunk.Path, "/", "_"), chunk.Hash))
+      tempfilepath := filepath.Join(conf.tempdir, fmt.Sprintf("%s___%x.tmp", strings.ReplaceAll(chunk.Path, "/", "_"), chunk.Hash))
 			tempfile, err := os.OpenFile(tempfilepath, os.O_RDWR|os.O_CREATE, 0600)
 			if err != nil {
 				logrus.WithFields(logrus.Fields{
