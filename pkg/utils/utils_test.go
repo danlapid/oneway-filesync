@@ -2,7 +2,6 @@ package utils
 
 import (
 	"os"
-	"syscall"
 	"testing"
 )
 
@@ -29,7 +28,11 @@ func Test_formatFilePath(t *testing.T) {
 
 func TestCtrlC(t *testing.T) {
 	ch := CtrlC()
-	err := syscall.Kill(syscall.Getpid(), syscall.SIGINT)
+	p, err := os.FindProcess(os.Getpid())
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = p.Signal(os.Interrupt)
 	if err != nil {
 		t.Fatal(err)
 	}
