@@ -231,7 +231,7 @@ func TestWatcherFiles(t *testing.T) {
 	for i := 0; i < 30; i++ {
 		tempfile := tempFile(t, 30000, conf.WatchDir)
 		defer os.Remove(tempfile)
-		defer waitForFinishedFile(t, receiverdb, tempfile, time.Now().Add(time.Minute*5), conf.OutDir)
+		defer waitForFinishedFile(t, receiverdb, tempfile, time.Now().Add(time.Minute*10), conf.OutDir)
 	}
 	tmpdir1 := filepath.Join(conf.WatchDir, "tmp1")
 	err := os.Mkdir(tmpdir1, os.ModePerm)
@@ -242,7 +242,7 @@ func TestWatcherFiles(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		tempfile := tempFile(t, 30000, tmpdir1)
 		defer os.Remove(tempfile)
-		defer waitForFinishedFile(t, receiverdb, tempfile, time.Now().Add(time.Minute*5), conf.OutDir)
+		defer waitForFinishedFile(t, receiverdb, tempfile, time.Now().Add(time.Minute*10), conf.OutDir)
 	}
 
 	tmpdir2 := filepath.Join(tmpdir1, "tmp2")
@@ -254,7 +254,7 @@ func TestWatcherFiles(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		tempfile := tempFile(t, 30000, tmpdir2)
 		defer os.Remove(tempfile)
-		defer waitForFinishedFile(t, receiverdb, tempfile, time.Now().Add(time.Minute*5), conf.OutDir)
+		defer waitForFinishedFile(t, receiverdb, tempfile, time.Now().Add(time.Minute*10), conf.OutDir)
 	}
 
 }
