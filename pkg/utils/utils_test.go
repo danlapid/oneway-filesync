@@ -29,7 +29,10 @@ func Test_formatFilePath(t *testing.T) {
 
 func TestCtrlC(t *testing.T) {
 	ch := CtrlC()
-	syscall.Kill(syscall.Getpid(), syscall.SIGINT)
+	err := syscall.Kill(syscall.Getpid(), syscall.SIGINT)
+	if err != nil {
+		t.Fatal(err)
+	}
 	_, ok := <-ch
 	if !ok {
 		t.Fatal("Ctrl c not caught")

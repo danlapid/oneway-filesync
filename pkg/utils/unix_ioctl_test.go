@@ -45,7 +45,11 @@ func TestGetReadBuffer(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			conn.SetReadBuffer(tt.args.bufsize)
+			err := conn.SetReadBuffer(tt.args.bufsize)
+			if err != nil {
+				t.Error(err)
+				return
+			}
 			got, err := utils.GetReadBuffer(rawconn)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetReadBuffer() error = %v, wantErr %v", err, tt.wantErr)
@@ -86,7 +90,11 @@ func TestGetAvailableBytes(t *testing.T) {
 	chunk := make([]byte, chunksize)
 	for i := 0; i < 10; i++ {
 		expected := (i + 1) * chunksize
-		sending_conn.Write(chunk)
+		_, err := sending_conn.Write(chunk)
+		if err != nil {
+			t.Error(err)
+			return
+		}
 		time.Sleep(300 * time.Millisecond)
 		avail, err := utils.GetAvailableBytes(rawconn)
 		if err != nil {
