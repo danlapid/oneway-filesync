@@ -10,6 +10,7 @@ import (
 	"oneway-filesync/pkg/database"
 	"oneway-filesync/pkg/receiver"
 	"oneway-filesync/pkg/sender"
+	"oneway-filesync/pkg/watcher"
 	"os"
 	"path/filepath"
 	"strings"
@@ -68,12 +69,11 @@ func pathReplace(path string) string {
 	return newpath
 }
 
-func waitForFinishedFile(t *testing.T, db *gorm.DB, path string, timeout time.Duration, outdir string) {
-	start := time.Now()
+func waitForFinishedFile(t *testing.T, db *gorm.DB, path string, endtime time.Time, outdir string) {
 	ticker := time.NewTicker(1 * time.Second)
 	for {
 		<-ticker.C
-		if time.Since(start) > timeout {
+		if time.Now().After(endtime) {
 			t.Fatalf("File '%s' did not transfer in time", path)
 		}
 		var file database.File
@@ -91,8 +91,8 @@ func waitForFinishedFile(t *testing.T, db *gorm.DB, path string, timeout time.Du
 	}
 }
 
-func tempFile(t *testing.T, size int) string {
-	file, err := os.CreateTemp("", "")
+func tempFile(t *testing.T, size int, tmpdir string) string {
+	file, err := os.CreateTemp(tmpdir, "")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -101,7 +101,11 @@ func tempFile(t *testing.T, size int) string {
 	if err != nil {
 		log.Fatal(err)
 	}
-	return file.Name()
+	tempfilepath, err := filepath.Abs(file.Name())
+	if err != nil {
+		log.Fatal(err)
+	}
+	return tempfilepath
 }
 
 func setupTest(t *testing.T, conf config.Config) (*gorm.DB, *gorm.DB, func()) {
@@ -109,15 +113,9 @@ func setupTest(t *testing.T, conf config.Config) (*gorm.DB, *gorm.DB, func()) {
 	if err != nil {
 		t.Fatalf("Failed setting up db with err: %v\n", err)
 	}
-	if err := database.ConfigureDatabase(senderdb); err != nil {
-		t.Fatalf("Failed setting up db with err: %v\n", err)
-	}
 
 	receiverdb, err := database.OpenDatabase("t_r_")
 	if err != nil {
-		t.Fatalf("Failed setting up db with err: %v\n", err)
-	}
-	if err := database.ConfigureDatabase(receiverdb); err != nil {
 		t.Fatalf("Failed setting up db with err: %v\n", err)
 	}
 
@@ -125,12 +123,20 @@ func setupTest(t *testing.T, conf config.Config) (*gorm.DB, *gorm.DB, func()) {
 		t.Fatalf("Failed creating outdir with err: %v\n", err)
 	}
 
+	if err := os.MkdirAll(conf.WatchDir, os.ModePerm); err != nil {
+		t.Fatalf("Failed creating watchdir with err: %v\n", err)
+	}
+
 	ctx, cancel := context.WithCancel(context.Background()) // Create a cancelable context and pass it to all goroutines, allows us to gracefully shut down the program
 	receiver.Receiver(ctx, receiverdb, conf)
 	sender.Sender(ctx, senderdb, conf)
+	watcher.Watcher(ctx, senderdb, conf)
 
 	return senderdb, receiverdb, func() {
 		cancel()
+		if err := os.RemoveAll(conf.WatchDir); err != nil {
+			t.Log(err)
+		}
 		if err := os.RemoveAll(conf.OutDir); err != nil {
 			t.Log(err)
 		}
@@ -155,6 +161,7 @@ func TestSetup(t *testing.T) {
 		ChunkFecRequired: 5,
 		ChunkFecTotal:    10,
 		OutDir:           "tests_out",
+		WatchDir:         "tests_watch",
 	})
 	defer teardowntest()
 }
@@ -168,18 +175,19 @@ func TestSmallFile(t *testing.T) {
 		ChunkFecRequired: 5,
 		ChunkFecTotal:    10,
 		OutDir:           "tests_out",
+		WatchDir:         "tests_watch",
 	}
 	senderdb, receiverdb, teardowntest := setupTest(t, conf)
 	defer teardowntest()
 
-	testfile := tempFile(t, 500)
+	testfile := tempFile(t, 500, "")
 	defer os.Remove(testfile)
 
 	err := database.QueueFileForSending(senderdb, testfile)
 	if err != nil {
 		t.Fatal(err)
 	}
-	waitForFinishedFile(t, receiverdb, testfile, time.Minute, conf.OutDir)
+	waitForFinishedFile(t, receiverdb, testfile, time.Now().Add(time.Minute), conf.OutDir)
 }
 
 func TestLargeFile(t *testing.T) {
@@ -191,16 +199,62 @@ func TestLargeFile(t *testing.T) {
 		ChunkFecRequired: 5,
 		ChunkFecTotal:    10,
 		OutDir:           "tests_out",
+		WatchDir:         "tests_watch",
 	}
 	senderdb, receiverdb, teardowntest := setupTest(t, conf)
 	defer teardowntest()
 
-	testfile := tempFile(t, 50*1024*1024)
+	testfile := tempFile(t, 50*1024*1024, "")
 	defer os.Remove(testfile)
 
 	err := database.QueueFileForSending(senderdb, testfile)
 	if err != nil {
 		t.Fatal(err)
 	}
-	waitForFinishedFile(t, receiverdb, testfile, time.Minute*2, conf.OutDir)
+	waitForFinishedFile(t, receiverdb, testfile, time.Now().Add(time.Minute*2), conf.OutDir)
+}
+
+func TestWatcherFiles(t *testing.T) {
+	conf := config.Config{
+		ReceiverIP:       "127.0.0.1",
+		ReceiverPort:     5000,
+		BandwidthLimit:   4 * 1024 * 1024,
+		ChunkSize:        8192,
+		ChunkFecRequired: 5,
+		ChunkFecTotal:    10,
+		OutDir:           "tests_out",
+		WatchDir:         "tests_watch",
+	}
+	_, receiverdb, teardowntest := setupTest(t, conf)
+	defer teardowntest()
+
+	for i := 0; i < 30; i++ {
+		tempfile := tempFile(t, 30000, conf.WatchDir)
+		defer os.Remove(tempfile)
+		defer waitForFinishedFile(t, receiverdb, tempfile, time.Now().Add(time.Minute*5), conf.OutDir)
+	}
+	tmpdir1 := filepath.Join(conf.WatchDir, "tmp1")
+	err := os.Mkdir(tmpdir1, os.ModePerm)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(tmpdir1)
+	for i := 0; i < 10; i++ {
+		tempfile := tempFile(t, 30000, tmpdir1)
+		defer os.Remove(tempfile)
+		defer waitForFinishedFile(t, receiverdb, tempfile, time.Now().Add(time.Minute*5), conf.OutDir)
+	}
+
+	tmpdir2 := filepath.Join(tmpdir1, "tmp2")
+	err = os.Mkdir(tmpdir2, os.ModePerm)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(tmpdir2)
+	for i := 0; i < 10; i++ {
+		tempfile := tempFile(t, 30000, tmpdir2)
+		defer os.Remove(tempfile)
+		defer waitForFinishedFile(t, receiverdb, tempfile, time.Now().Add(time.Minute*5), conf.OutDir)
+	}
+
 }

@@ -2,6 +2,7 @@ package watcher
 
 import (
 	"context"
+	"oneway-filesync/pkg/config"
 	"oneway-filesync/pkg/database"
 	"path/filepath"
 	"time"
@@ -17,10 +18,10 @@ type watcherConfig struct {
 	cache map[string]time.Time
 }
 
-// To save up on resources we only send files that haven't changed for the past 60 seconds
+// To save up on resources we only send files that haven't changed for the past 30 seconds
 // otherwise many consecutive small changes will cause a large overhead on the sender/receiver
 func worker(ctx context.Context, conf *watcherConfig) {
-	ticker := time.NewTicker(15 * time.Second)
+	ticker := time.NewTicker(10 * time.Second)
 	for {
 		select {
 		case <-ctx.Done():
@@ -28,9 +29,10 @@ func worker(ctx context.Context, conf *watcherConfig) {
 			return
 		case ei := <-conf.input:
 			conf.cache[ei.Path()] = time.Now()
+			logrus.Infof("Noticed change in file '%s'", ei.Path())
 		case <-ticker.C:
 			for path, lastupdated := range conf.cache {
-				if time.Since(lastupdated).Seconds() > 60 {
+				if time.Since(lastupdated).Seconds() > 30 {
 					delete(conf.cache, path)
 					err := database.QueueFileForSending(conf.db, path)
 					if err != nil {
@@ -55,4 +57,10 @@ func CreateWatcher(ctx context.Context, db *gorm.DB, watchdir string, input chan
 		cache: make(map[string]time.Time),
 	}
 	go worker(ctx, &conf)
+}
+
+func Watcher(ctx context.Context, db *gorm.DB, conf config.Config) {
+	events := make(chan notify.EventInfo, 100)
+
+	CreateWatcher(ctx, db, conf.WatchDir, events)
 }

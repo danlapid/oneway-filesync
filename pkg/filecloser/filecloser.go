@@ -50,7 +50,14 @@ func worker(ctx context.Context, conf *fileCloserConfig) {
 					"Hash":     fmt.Sprintf("%x", file.Hash),
 				}).Errorf("Error opening tempfile: %v", err)
 				dbentry.Success = false
-				conf.db.Save(&dbentry)
+				if err := conf.db.Save(&dbentry).Error; err != nil {
+					logrus.WithFields(logrus.Fields{
+						"TempFile":        file.TempFile,
+						"Path":            file.Path,
+						"Hash":            fmt.Sprintf("%x", file.Hash),
+						"TransferSuccess": dbentry.Success,
+					}).Errorf("Failed committing to db: %v", err)
+				}
 				continue
 			}
 
@@ -63,7 +70,15 @@ func worker(ctx context.Context, conf *fileCloserConfig) {
 					"Hash":     fmt.Sprintf("%x", file.Hash),
 				}).Errorf("Error hashing tempfile: %v", err)
 				dbentry.Success = false
-				conf.db.Save(&dbentry)
+				if err := conf.db.Save(&dbentry).Error; err != nil {
+					logrus.WithFields(logrus.Fields{
+						"TempFile":        file.TempFile,
+						"Path":            file.Path,
+						"Hash":            fmt.Sprintf("%x", file.Hash),
+						"TempFileHash":    fmt.Sprintf("%x", hash),
+						"TransferSuccess": dbentry.Success,
+					}).Errorf("Failed committing to db: %v", err)
+				}
 				continue
 			}
 			if hash != file.Hash {
@@ -74,7 +89,15 @@ func worker(ctx context.Context, conf *fileCloserConfig) {
 					"TempFileHash": fmt.Sprintf("%x", hash),
 				}).Errorf("Hash mismatch")
 				dbentry.Success = false
-				conf.db.Save(&dbentry)
+				if err := conf.db.Save(&dbentry).Error; err != nil {
+					logrus.WithFields(logrus.Fields{
+						"TempFile":        file.TempFile,
+						"Path":            file.Path,
+						"Hash":            fmt.Sprintf("%x", file.Hash),
+						"TempFileHash":    fmt.Sprintf("%x", hash),
+						"TransferSuccess": dbentry.Success,
+					}).Errorf("Failed committing to db: %v", err)
+				}
 				continue
 			}
 			if err2 != nil {
@@ -95,7 +118,15 @@ func worker(ctx context.Context, conf *fileCloserConfig) {
 					"TempFileHash": fmt.Sprintf("%x", hash),
 				}).Errorf("Failed creating directory path: %v", err)
 				dbentry.Success = false
-				conf.db.Save(&dbentry)
+				if err := conf.db.Save(&dbentry).Error; err != nil {
+					logrus.WithFields(logrus.Fields{
+						"TempFile":        file.TempFile,
+						"Path":            file.Path,
+						"Hash":            fmt.Sprintf("%x", file.Hash),
+						"TempFileHash":    fmt.Sprintf("%x", hash),
+						"TransferSuccess": dbentry.Success,
+					}).Errorf("Failed committing to db: %v", err)
+				}
 				continue
 			}
 
@@ -108,7 +139,15 @@ func worker(ctx context.Context, conf *fileCloserConfig) {
 					"TempFileHash": fmt.Sprintf("%x", hash),
 				}).Errorf("Failed moving tempfile to new location: %v", err)
 				dbentry.Success = false
-				conf.db.Save(&dbentry)
+				if err := conf.db.Save(&dbentry).Error; err != nil {
+					logrus.WithFields(logrus.Fields{
+						"TempFile":        file.TempFile,
+						"Path":            file.Path,
+						"Hash":            fmt.Sprintf("%x", file.Hash),
+						"TempFileHash":    fmt.Sprintf("%x", hash),
+						"TransferSuccess": dbentry.Success,
+					}).Errorf("Failed committing to db: %v", err)
+				}
 				continue
 			}
 
@@ -118,7 +157,15 @@ func worker(ctx context.Context, conf *fileCloserConfig) {
 				"NewPath": newpath,
 			}).Infof("Successfully finished writing file")
 			dbentry.Success = true
-			conf.db.Save(&dbentry)
+			if err := conf.db.Save(&dbentry).Error; err != nil {
+				logrus.WithFields(logrus.Fields{
+					"TempFile":        file.TempFile,
+					"Path":            file.Path,
+					"Hash":            fmt.Sprintf("%x", file.Hash),
+					"TempFileHash":    fmt.Sprintf("%x", hash),
+					"TransferSuccess": dbentry.Success,
+				}).Errorf("Failed committing to db: %v", err)
+			}
 		}
 	}
 }

@@ -26,20 +26,27 @@ type ReceivedFile struct {
 
 const DBFILE = "gorm.db"
 
+func configureDatabase(db *gorm.DB) error {
+	return db.AutoMigrate(&File{})
+}
+
 // Opens a connection to the database,
 // eventually we can choose to receive the user, password, host, database name
 // from the the configuration file, because we expect this database to be run locally
 // we leave it as defaults for now.
 func OpenDatabase(tableprefix string) (*gorm.DB, error) {
-	return gorm.Open(sqlite.Open(DBFILE),
+	db, err := gorm.Open(sqlite.Open(DBFILE),
 		&gorm.Config{
 			NamingStrategy: schema.NamingStrategy{TablePrefix: tableprefix},
 			Logger:         gormlogger.Discard,
 		})
-}
-
-func ConfigureDatabase(db *gorm.DB) error {
-	return db.AutoMigrate(&File{})
+	if err != nil {
+		return nil, err
+	}
+	if err = configureDatabase(db); err != nil {
+		return nil, err
+	}
+	return db, nil
 }
 
 func ClearDatabase(db *gorm.DB) error {
@@ -79,6 +86,5 @@ func QueueFileForSending(db *gorm.DB, path string) error {
 		Success:  false,
 	}
 
-	result := db.Create(&file)
-	return result.Error
+	return db.Create(&file).Error
 }

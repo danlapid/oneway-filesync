@@ -6,9 +6,6 @@ import (
 	"oneway-filesync/pkg/database"
 	"oneway-filesync/pkg/sender"
 	"oneway-filesync/pkg/utils"
-	"os"
-	"os/signal"
-	"syscall"
 
 	"github.com/sirupsen/logrus"
 )
@@ -27,16 +24,9 @@ func main() {
 		return
 	}
 
-	if err = database.ConfigureDatabase(db); err != nil {
-		logrus.Errorf("Failed setting up db with err %v", err)
-		return
-	}
-
 	ctx, cancel := context.WithCancel(context.Background()) // Create a cancelable context and pass it to all goroutines, allows us to gracefully shut down the program
 	sender.Sender(ctx, db, conf)
 
-	done := make(chan os.Signal, 1)
-	signal.Notify(done, syscall.SIGINT, syscall.SIGTERM)
-	<-done
+	<-utils.CtrlC()
 	cancel() // Gracefully shutdown and stop all goroutines
 }
