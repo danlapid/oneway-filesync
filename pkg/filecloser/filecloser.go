@@ -12,13 +12,13 @@ import (
 	"gorm.io/gorm"
 )
 
-type FileCloser struct {
+type fileCloserConfig struct {
 	db     *gorm.DB
 	outdir string
 	input  chan *structs.OpenTempFile
 }
 
-func worker(ctx context.Context, conf *FileCloser) {
+func worker(ctx context.Context, conf *fileCloserConfig) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -106,7 +106,7 @@ func worker(ctx context.Context, conf *FileCloser) {
 }
 
 func CreateFileCloser(ctx context.Context, db *gorm.DB, outdir string, input chan *structs.OpenTempFile, workercount int) {
-	conf := FileCloser{
+	conf := fileCloserConfig{
 		db:     db,
 		outdir: outdir,
 		input:  input,

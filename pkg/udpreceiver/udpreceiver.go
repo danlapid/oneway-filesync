@@ -12,13 +12,13 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type UdpReceiver struct {
+type udpReceiverConfig struct {
 	conn      *net.UDPConn
 	chunksize int
 	output    chan *structs.Chunk
 }
 
-func manager(ctx context.Context, conf *UdpReceiver) {
+func manager(ctx context.Context, conf *udpReceiverConfig) {
 	if runtime.GOOS != "linux" && runtime.GOOS != "darwin" {
 		logrus.Infof("Buffers fill detection not supported on the current OS")
 		return
@@ -52,7 +52,7 @@ func manager(ctx context.Context, conf *UdpReceiver) {
 	}
 }
 
-func worker(ctx context.Context, conf *UdpReceiver) {
+func worker(ctx context.Context, conf *udpReceiverConfig) {
 	buf := make([]byte, conf.chunksize)
 
 	for {
@@ -96,7 +96,7 @@ func CreateUdpReceiver(ctx context.Context, ip string, port int, chunksize int, 
 		conn.Close()
 	}()
 
-	conf := UdpReceiver{
+	conf := udpReceiverConfig{
 		conn:      conn,
 		chunksize: chunksize,
 		output:    output,

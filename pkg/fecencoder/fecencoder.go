@@ -9,7 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type FecEncoder struct {
+type fecEncoderConfig struct {
 	chunksize int
 	required  int
 	total     int
@@ -22,7 +22,7 @@ type FecEncoder struct {
 // These are encoding using reed solomon FEC
 // Then we send each share seperately
 // At the end they are combined and concatenated to form the file.
-func worker(ctx context.Context, conf *FecEncoder) {
+func worker(ctx context.Context, conf *fecEncoderConfig) {
 	fec, err := reedsolomon.New(conf.required, conf.total-conf.required)
 	if err != nil {
 		logrus.Errorf("Error creating fec object: %v", err)
@@ -72,7 +72,7 @@ func worker(ctx context.Context, conf *FecEncoder) {
 }
 
 func CreateFecEncoder(ctx context.Context, chunksize int, required int, total int, input chan *structs.Chunk, output chan *structs.Chunk, workercount int) {
-	conf := FecEncoder{
+	conf := fecEncoderConfig{
 		chunksize: chunksize,
 		required:  required,
 		total:     total,

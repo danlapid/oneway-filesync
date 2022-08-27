@@ -11,12 +11,12 @@ import (
 	"gorm.io/gorm"
 )
 
-type QueueReader struct {
+type queueReaderConfig struct {
 	db     *gorm.DB
 	output chan database.File
 }
 
-func worker(ctx context.Context, conf *QueueReader) {
+func worker(ctx context.Context, conf *queueReaderConfig) {
 	ticker := time.NewTicker(300 * time.Millisecond)
 	for {
 		select {
@@ -42,7 +42,7 @@ func worker(ctx context.Context, conf *QueueReader) {
 }
 
 func CreateQueueReader(ctx context.Context, db *gorm.DB, output chan database.File) {
-	conf := QueueReader{
+	conf := queueReaderConfig{
 		db:     db,
 		output: output,
 	}

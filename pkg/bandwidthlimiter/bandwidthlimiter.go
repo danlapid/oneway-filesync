@@ -7,13 +7,13 @@ import (
 	"go.uber.org/ratelimit"
 )
 
-type BandwidthLimiter struct {
+type bandwidthLimiterConfig struct {
 	rl     ratelimit.Limiter
 	input  chan *structs.Chunk
 	output chan *structs.Chunk
 }
 
-func worker(ctx context.Context, conf *BandwidthLimiter) {
+func worker(ctx context.Context, conf *bandwidthLimiterConfig) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -26,7 +26,7 @@ func worker(ctx context.Context, conf *BandwidthLimiter) {
 }
 
 func CreateBandwidthLimiter(ctx context.Context, chunks_per_sec int, input chan *structs.Chunk, output chan *structs.Chunk) {
-	conf := BandwidthLimiter{
+	conf := bandwidthLimiterConfig{
 		rl:     ratelimit.New(chunks_per_sec),
 		input:  input,
 		output: output,

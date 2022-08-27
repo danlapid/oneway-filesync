@@ -44,7 +44,10 @@ func ConfigureDatabase(db *gorm.DB) error {
 
 func ClearDatabase(db *gorm.DB) error {
 	stmt := &gorm.Statement{DB: db}
-	stmt.Parse(&File{})
+	err := stmt.Parse(&File{})
+	if err != nil {
+		return err
+	}
 	tablename := stmt.Schema.Table
 	return db.Exec(fmt.Sprintf("DELETE FROM %s", tablename)).Error
 }

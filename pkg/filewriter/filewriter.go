@@ -13,7 +13,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type FileWriter struct {
+type fileWriterConfig struct {
 	tempdir string
 	input   chan *structs.Chunk
 	output  chan *structs.OpenTempFile
@@ -24,7 +24,7 @@ type FileWriter struct {
 // Since we can never really be sure all the chunks arrive
 // But 30 seconds after no more chunks arrive we can be rather certain
 // no more chunks will arrive
-func manager(ctx context.Context, conf *FileWriter) {
+func manager(ctx context.Context, conf *fileWriterConfig) {
 	ticker := time.NewTicker(15 * time.Second)
 	for {
 		select {
@@ -42,13 +42,13 @@ func manager(ctx context.Context, conf *FileWriter) {
 	}
 }
 
-func worker(ctx context.Context, conf *FileWriter) {
+func worker(ctx context.Context, conf *fileWriterConfig) {
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case chunk := <-conf.input:
-      tempfilepath := filepath.Join(conf.tempdir, fmt.Sprintf("%s___%x.tmp", strings.ReplaceAll(chunk.Path, "/", "_"), chunk.Hash))
+			tempfilepath := filepath.Join(conf.tempdir, fmt.Sprintf("%s___%x.tmp", strings.ReplaceAll(chunk.Path, "/", "_"), chunk.Hash))
 			tempfile, err := os.OpenFile(tempfilepath, os.O_RDWR|os.O_CREATE, 0600)
 			if err != nil {
 				logrus.WithFields(logrus.Fields{
@@ -80,7 +80,7 @@ func worker(ctx context.Context, conf *FileWriter) {
 }
 
 func CreateFileWriter(ctx context.Context, tempdir string, input chan *structs.Chunk, output chan *structs.OpenTempFile, workercount int) {
-	conf := FileWriter{
+	conf := fileWriterConfig{
 		tempdir: tempdir,
 		input:   input,
 		output:  output,
