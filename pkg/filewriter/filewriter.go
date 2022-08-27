@@ -68,6 +68,7 @@ func worker(ctx context.Context, conf *fileWriterConfig) {
 			}
 
 			_, err = tempfile.WriteAt(chunk.Data, chunk.DataOffset)
+			tempfile.Close() // Not using defer because of overhead concerns
 			if err != nil {
 				logrus.WithFields(logrus.Fields{
 					"TempFile": tempfilepath,
