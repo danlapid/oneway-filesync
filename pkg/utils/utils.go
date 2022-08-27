@@ -25,7 +25,7 @@ func formatFilePath(path string) string {
 
 func CtrlC() chan os.Signal {
 	done := make(chan os.Signal, 1)
-	signal.Notify(done, syscall.SIGINT, syscall.SIGKILL, syscall.SIGTERM)
+	signal.Notify(done, syscall.SIGINT, syscall.SIGTERM)
 	return done
 }
 
