@@ -32,7 +32,7 @@ func TestCtrlC(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = p.Signal(os.Interrupt)
+	err = p.Signal(os.Kill)
 	if err != nil {
 		t.Fatal(err)
 	}
