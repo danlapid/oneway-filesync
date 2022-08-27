@@ -14,8 +14,13 @@ import (
 )
 
 func formatFilePath(path string) string {
-	arr := strings.Split(path, "/")
-	return arr[len(arr)-1]
+	if strings.Contains(path, "\\") {
+		arr := strings.Split(path, "\\")
+		return arr[len(arr)-1]
+	} else {
+		arr := strings.Split(path, "/")
+		return arr[len(arr)-1]
+	}
 }
 
 func CtrlC() chan os.Signal {
