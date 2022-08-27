@@ -4,7 +4,6 @@ on:
     paths: ["**.go", "go.mod", ".github/workflows/*"]
 
 jobs:
-  # Test Windows and Linux with the latest Go version and the oldest we support.
   test:
     strategy:
       fail-fast: false
@@ -18,14 +17,47 @@ jobs:
           - "1.19"
     runs-on: ${{ matrix.os }}
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+
       - name: setup Go
         uses: actions/setup-go@v3
         with:
           go-version: ${{ matrix.go }}
 
-      - name: checkout
-        uses: actions/checkout@v3
-
       - name: test
         run: |
-          go test -race ./...
+          go test -v -race ./...
+
+  coverage:
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+        go:
+          - "1.19"
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+
+      - name: Install Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: ${{ matrix.go }}
+
+      - name: Calc coverage
+        run: |
+          go test -v -covermode=count -coverprofile=coverage.out ./...
+      - name: Convert coverage.out to coverage.lcov
+        uses: jandelgado/gcov2lcov-action@master
+      - name: Coveralls
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.github_token }}
+          path-to-lcov: coverage.lcov

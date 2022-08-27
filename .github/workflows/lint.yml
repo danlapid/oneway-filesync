@@ -1,11 +1,11 @@
-name: Staticcheck
+name: Lint
 on:
   push:
     paths: ["**.go", "go.mod", ".github/workflows/*"]
 
 jobs:
-  staticcheck:
-    name: "staticcheck"
+  lint:
+    name: "lint"
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -13,16 +13,26 @@ jobs:
         go:
           - "1.19"
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+
       - name: setup Go
         uses: actions/setup-go@v3
         with:
           go-version: ${{ matrix.go }}
 
-      - uses: actions/checkout@v3
+      - name: Run linters
+        uses: golangci/golangci-lint-action@v3
         with:
-          fetch-depth: 1
-      - run: "go vet ./..."
-      - uses: dominikh/staticcheck-action@v1.2.0
+          version: latest
+
+      - name: Go vet
+        run: "go vet ./..."
+
+      - name: Staticcheck
+        uses: dominikh/staticcheck-action@master
         with:
           version: "2022.1"
           install-go: false
