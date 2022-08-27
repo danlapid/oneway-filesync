@@ -16,6 +16,7 @@ func main() {
 	db, err := database.OpenDatabase("s_")
 	if err != nil {
 		fmt.Printf("%v\n", err)
+		return
 	}
 
 	if err = database.ConfigureDatabase(db); err != nil {
@@ -24,7 +25,7 @@ func main() {
 	}
 
 	path := os.Args[1]
-	filepath.Walk(path, func(filepath string, info os.FileInfo, e error) error {
+	err = filepath.Walk(path, func(filepath string, info os.FileInfo, e error) error {
 		if !info.IsDir() {
 			err := database.QueueFileForSending(db, filepath)
 			if err != nil {
@@ -35,4 +36,8 @@ func main() {
 		}
 		return nil
 	})
+	if err != nil {
+		fmt.Printf("Failed walking dir with err %v\n", err)
+		return
+	}
 }

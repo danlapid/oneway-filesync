@@ -5,10 +5,11 @@ go 1.19
 require (
 	github.com/BurntSushi/toml v1.2.0
 	github.com/klauspost/reedsolomon v1.10.0
+	github.com/rjeczalik/notify v0.9.2
 	github.com/sirupsen/logrus v1.9.0
 	github.com/zhuangsirui/binpacker v2.0.0+incompatible
 	go.uber.org/ratelimit v0.2.0
-	golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8
+	golang.org/x/sys v0.0.0-20220825204002-c680a09ffe64
 	gorm.io/driver/sqlite v1.3.6
 	gorm.io/gorm v1.23.8
 )

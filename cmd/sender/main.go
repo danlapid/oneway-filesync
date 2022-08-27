@@ -14,24 +14,23 @@ import (
 )
 
 func main() {
+	utils.InitializeLogging("sender.log")
 	conf, err := config.GetConfig("config.toml")
 	if err != nil {
-		logrus.Errorf("Failed reading config with err %v\n", err)
+		logrus.Errorf("Failed reading config with err %v", err)
 		return
 	}
 
 	db, err := database.OpenDatabase("s_")
 	if err != nil {
-		logrus.Errorf("Failed connecting to db with err %v\n", err)
+		logrus.Errorf("Failed connecting to db with err %v", err)
 		return
 	}
 
 	if err = database.ConfigureDatabase(db); err != nil {
-		logrus.Errorf("Failed setting up db with err %v\n", err)
+		logrus.Errorf("Failed setting up db with err %v", err)
 		return
 	}
-
-	utils.InitializeLogging("sender.log")
 
 	ctx, cancel := context.WithCancel(context.Background()) // Create a cancelable context and pass it to all goroutines, allows us to gracefully shut down the program
 	sender.Sender(ctx, db, conf)

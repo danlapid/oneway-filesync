@@ -4,34 +4,19 @@ import (
 	"context"
 	"fmt"
 	"oneway-filesync/pkg/structs"
-	"time"
 
 	"github.com/klauspost/reedsolomon"
 	"github.com/sirupsen/logrus"
 )
 
-// Cache docs:
-// For every (FileHash,FileDataOffset) we save a cache of shares
-// Since we need at least <required> shares to create the original data we have to cache them somewhere
-// After we get <required> shares we can pull them and create the data but then up to (<total>-<required>) will continue coming in
-// The LastUpdated is a field which we can time out based upon and
-type CacheKey struct {
-	Hash       [structs.HASHSIZE]byte
-	DataOffset int64
-}
-type CacheValue struct {
-	Shares      chan *structs.Chunk
-	LastUpdated time.Time
-}
-
-type FecDecoder struct {
+type fecDecoderConfig struct {
 	required int
 	total    int
 	input    chan []*structs.Chunk
 	output   chan *structs.Chunk
 }
 
-func Worker(ctx context.Context, conf *FecDecoder) {
+func worker(ctx context.Context, conf *fecDecoderConfig) {
 	fec, err := reedsolomon.New(conf.required, conf.total-conf.required)
 	if err != nil {
 		logrus.Errorf("Error creating fec object: %v", err)
@@ -70,13 +55,13 @@ func Worker(ctx context.Context, conf *FecDecoder) {
 }
 
 func CreateFecDecoder(ctx context.Context, required int, total int, input chan []*structs.Chunk, output chan *structs.Chunk, workercount int) {
-	conf := FecDecoder{
+	conf := fecDecoderConfig{
 		required: required,
 		total:    total,
 		input:    input,
 		output:   output,
 	}
 	for i := 0; i < workercount; i++ {
-		go Worker(ctx, &conf)
+		go worker(ctx, &conf)
 	}
 }

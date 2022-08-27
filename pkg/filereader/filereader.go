@@ -13,7 +13,7 @@ import (
 	"gorm.io/gorm"
 )
 
-type FileReader struct {
+type fileReaderConfig struct {
 	db        *gorm.DB
 	chunksize int
 	required  int
@@ -21,7 +21,7 @@ type FileReader struct {
 	output    chan *structs.Chunk
 }
 
-func Worker(ctx context.Context, conf *FileReader) {
+func worker(ctx context.Context, conf *fileReaderConfig) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -91,7 +91,7 @@ func Worker(ctx context.Context, conf *FileReader) {
 }
 
 func CreateFileReader(ctx context.Context, db *gorm.DB, chunksize int, required int, input chan database.File, output chan *structs.Chunk, workercount int) {
-	conf := FileReader{
+	conf := fileReaderConfig{
 		db:        db,
 		chunksize: chunksize,
 		required:  required,
@@ -99,6 +99,6 @@ func CreateFileReader(ctx context.Context, db *gorm.DB, chunksize int, required 
 		output:    output,
 	}
 	for i := 0; i < workercount; i++ {
-		go Worker(ctx, &conf)
+		go worker(ctx, &conf)
 	}
 }

@@ -22,7 +22,7 @@ func Receiver(ctx context.Context, db *gorm.DB, conf config.Config) {
 	tmpdir := filepath.Join(conf.OutDir, "tempfiles")
 	err := os.MkdirAll(tmpdir, os.ModePerm)
 	if err != nil {
-		logrus.Errorf("Failed creating tempdir with err %v\n", err)
+		logrus.Errorf("Failed creating tempdir with err %v", err)
 		return
 	}
 

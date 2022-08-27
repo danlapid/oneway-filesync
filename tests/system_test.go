@@ -59,78 +59,6 @@ func getDiff(t *testing.T, path1 string, path2 string) int {
 	}
 	return diff
 }
-func TestSetup(t *testing.T) {
-	_, _, teardowntest := setupTest(t, config.Config{
-		ReceiverIP:       "127.0.0.1",
-		ReceiverPort:     5000,
-		BandwidthLimit:   10000,
-		ChunkSize:        8192,
-		ChunkFecRequired: 5,
-		ChunkFecTotal:    10,
-		OutDir:           "tests_out",
-	})
-	defer teardowntest()
-}
-
-func TestSmallFile(t *testing.T) {
-	conf := config.Config{
-		ReceiverIP:       "127.0.0.1",
-		ReceiverPort:     5000,
-		BandwidthLimit:   10000,
-		ChunkSize:        8192,
-		ChunkFecRequired: 5,
-		ChunkFecTotal:    10,
-		OutDir:           "tests_out",
-	}
-	senderdb, receiverdb, teardowntest := setupTest(t, conf)
-	defer teardowntest()
-
-	testfile := tempFile(t, 500)
-	defer os.Remove(testfile)
-
-	database.QueueFileForSending(senderdb, testfile)
-	waitForFinishedFile(t, receiverdb, testfile, time.Minute, conf.OutDir)
-}
-
-func TestLargeFile(t *testing.T) {
-	conf := config.Config{
-		ReceiverIP:       "127.0.0.1",
-		ReceiverPort:     5000,
-		BandwidthLimit:   4 * 1024 * 1024,
-		ChunkSize:        8192,
-		ChunkFecRequired: 5,
-		ChunkFecTotal:    10,
-		OutDir:           "tests_out",
-	}
-	senderdb, receiverdb, teardowntest := setupTest(t, conf)
-	defer teardowntest()
-
-	testfile := tempFile(t, 50*1024*1024)
-	defer os.Remove(testfile)
-
-	database.QueueFileForSending(senderdb, testfile)
-	waitForFinishedFile(t, receiverdb, testfile, time.Minute*2, conf.OutDir)
-}
-
-func TestVeryLargeFile(t *testing.T) {
-	conf := config.Config{
-		ReceiverIP:       "127.0.0.1",
-		ReceiverPort:     5000,
-		BandwidthLimit:   25 * 1024 * 1024,
-		ChunkSize:        8192,
-		ChunkFecRequired: 5,
-		ChunkFecTotal:    10,
-		OutDir:           "tests_out",
-	}
-	senderdb, receiverdb, teardowntest := setupTest(t, conf)
-	defer teardowntest()
-
-	testfile := tempFile(t, 1*1024*1024*1024)
-	defer os.Remove(testfile)
-
-	database.QueueFileForSending(senderdb, testfile)
-	waitForFinishedFile(t, receiverdb, testfile, time.Minute*20, conf.OutDir)
-}
 
 func waitForFinishedFile(t *testing.T, db *gorm.DB, path string, timeout time.Duration, outdir string) {
 	start := time.Now()
@@ -195,9 +123,99 @@ func setupTest(t *testing.T, conf config.Config) (*gorm.DB, *gorm.DB, func()) {
 
 	return senderdb, receiverdb, func() {
 		cancel()
-		os.RemoveAll(conf.OutDir)
-		database.ClearDatabase(receiverdb)
-		database.ClearDatabase(senderdb)
-		os.Remove(database.DBFILE)
+		if err := os.RemoveAll(conf.OutDir); err != nil {
+			t.Log(err)
+		}
+		if err := database.ClearDatabase(receiverdb); err != nil {
+			t.Log(err)
+		}
+		if err := database.ClearDatabase(senderdb); err != nil {
+			t.Log(err)
+		}
+		if err := os.Remove(database.DBFILE); err != nil {
+			t.Log(err)
+		}
 	}
+}
+
+func TestSetup(t *testing.T) {
+	_, _, teardowntest := setupTest(t, config.Config{
+		ReceiverIP:       "127.0.0.1",
+		ReceiverPort:     5000,
+		BandwidthLimit:   10000,
+		ChunkSize:        8192,
+		ChunkFecRequired: 5,
+		ChunkFecTotal:    10,
+		OutDir:           "tests_out",
+	})
+	defer teardowntest()
+}
+
+func TestSmallFile(t *testing.T) {
+	conf := config.Config{
+		ReceiverIP:       "127.0.0.1",
+		ReceiverPort:     5000,
+		BandwidthLimit:   10000,
+		ChunkSize:        8192,
+		ChunkFecRequired: 5,
+		ChunkFecTotal:    10,
+		OutDir:           "tests_out",
+	}
+	senderdb, receiverdb, teardowntest := setupTest(t, conf)
+	defer teardowntest()
+
+	testfile := tempFile(t, 500)
+	defer os.Remove(testfile)
+
+	err := database.QueueFileForSending(senderdb, testfile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	waitForFinishedFile(t, receiverdb, testfile, time.Minute, conf.OutDir)
+}
+
+func TestLargeFile(t *testing.T) {
+	conf := config.Config{
+		ReceiverIP:       "127.0.0.1",
+		ReceiverPort:     5000,
+		BandwidthLimit:   4 * 1024 * 1024,
+		ChunkSize:        8192,
+		ChunkFecRequired: 5,
+		ChunkFecTotal:    10,
+		OutDir:           "tests_out",
+	}
+	senderdb, receiverdb, teardowntest := setupTest(t, conf)
+	defer teardowntest()
+
+	testfile := tempFile(t, 50*1024*1024)
+	defer os.Remove(testfile)
+
+	err := database.QueueFileForSending(senderdb, testfile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	waitForFinishedFile(t, receiverdb, testfile, time.Minute*2, conf.OutDir)
+}
+
+func TestVeryLargeFile(t *testing.T) {
+	conf := config.Config{
+		ReceiverIP:       "127.0.0.1",
+		ReceiverPort:     5000,
+		BandwidthLimit:   10 * 1024 * 1024,
+		ChunkSize:        8192,
+		ChunkFecRequired: 5,
+		ChunkFecTotal:    10,
+		OutDir:           "tests_out",
+	}
+	senderdb, receiverdb, teardowntest := setupTest(t, conf)
+	defer teardowntest()
+
+	testfile := tempFile(t, 1*1024*1024*1024)
+	defer os.Remove(testfile)
+
+	err := database.QueueFileForSending(senderdb, testfile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	waitForFinishedFile(t, receiverdb, testfile, time.Minute*20, conf.OutDir)
 }

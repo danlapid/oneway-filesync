@@ -1,0 +1,95 @@
+before:
+  hooks:
+    - go mod tidy
+builds:
+  - id: sender
+    main: ./cmd/sender/main.go
+    binary: sender
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - "386"
+      - arm64
+    ignore:
+      - goos: darwin
+        goarch: "386"
+  - id: receiver
+    main: ./cmd/receiver/main.go
+    binary: receiver
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - "386"
+      - arm64
+    ignore:
+      - goos: darwin
+        goarch: "386"
+  - id: sendfiles
+    main: ./cmd/sendfiles/main.go
+    binary: sendfiles
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - "386"
+      - arm64
+    ignore:
+      - goos: darwin
+        goarch: "386"
+  - id: watcher
+    main: ./cmd/watcher/main.go
+    binary: watcher
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+    goarch:
+      - amd64
+      - "386"
+      - arm64
+  - id: watcher-mac
+    main: ./cmd/watcher/main.go
+    binary: watcher
+    env:
+      - CGO_ENABLED=1
+    goos:
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+archives:
+  - files:
+      - README.md
+      - LICENSE
+    replacements:
+      darwin: MacOS
+      linux: Linux
+      windows: Windows
+      386: x86_32
+      amd64: x86_64
+      arm64: Arm64
+checksum:
+  name_template: "checksums.txt"
+snapshot:
+  name_template: "{{ incpatch .Version }}"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"

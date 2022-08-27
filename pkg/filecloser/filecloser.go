@@ -7,18 +7,29 @@ import (
 	"oneway-filesync/pkg/structs"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
-type FileCloser struct {
+func normalizePath(path string) string {
+	newpath := strings.ReplaceAll(path, ":", "")
+	if strings.Contains(newpath, "\\") {
+		return filepath.Join(strings.Split(newpath, "\\")...)
+	} else {
+
+		return filepath.Join(strings.Split(newpath, "/")...)
+	}
+}
+
+type fileCloserConfig struct {
 	db     *gorm.DB
 	outdir string
 	input  chan *structs.OpenTempFile
 }
 
-func Worker(ctx context.Context, conf *FileCloser) {
+func worker(ctx context.Context, conf *fileCloserConfig) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -42,9 +53,9 @@ func Worker(ctx context.Context, conf *FileCloser) {
 				conf.db.Save(&dbentry)
 				continue
 			}
-			defer f.Close()
 
 			hash, err := structs.HashFile(f)
+			err2 := f.Close()
 			if err != nil {
 				logrus.WithFields(logrus.Fields{
 					"TempFile": file.TempFile,
@@ -66,8 +77,15 @@ func Worker(ctx context.Context, conf *FileCloser) {
 				conf.db.Save(&dbentry)
 				continue
 			}
+			if err2 != nil {
+				logrus.WithFields(logrus.Fields{
+					"TempFile": file.TempFile,
+					"Path":     file.Path,
+					"Hash":     fmt.Sprintf("%x", file.Hash),
+				}).Errorf("Error ckisubg tempfile: %v", err)
+			}
 
-			newpath := filepath.Join(conf.outdir, file.Path)
+			newpath := filepath.Join(conf.outdir, normalizePath(file.Path))
 			err = os.MkdirAll(filepath.Dir(newpath), os.ModePerm)
 			if err != nil {
 				logrus.WithFields(logrus.Fields{
@@ -106,12 +124,12 @@ func Worker(ctx context.Context, conf *FileCloser) {
 }
 
 func CreateFileCloser(ctx context.Context, db *gorm.DB, outdir string, input chan *structs.OpenTempFile, workercount int) {
-	conf := FileCloser{
+	conf := fileCloserConfig{
 		db:     db,
 		outdir: outdir,
 		input:  input,
 	}
 	for i := 0; i < workercount; i++ {
-		go Worker(ctx, &conf)
+		go worker(ctx, &conf)
 	}
 }

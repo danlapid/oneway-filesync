@@ -13,7 +13,15 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type FileWriter struct {
+func pathReplace(path string) string {
+	newpath := path
+	newpath = strings.ReplaceAll(newpath, "/", "_")
+	newpath = strings.ReplaceAll(newpath, "\\", "_")
+	newpath = strings.ReplaceAll(newpath, ":", "_")
+	return newpath
+}
+
+type fileWriterConfig struct {
 	tempdir string
 	input   chan *structs.Chunk
 	output  chan *structs.OpenTempFile
@@ -24,7 +32,7 @@ type FileWriter struct {
 // Since we can never really be sure all the chunks arrive
 // But 30 seconds after no more chunks arrive we can be rather certain
 // no more chunks will arrive
-func Manager(ctx context.Context, conf *FileWriter) {
+func manager(ctx context.Context, conf *fileWriterConfig) {
 	ticker := time.NewTicker(15 * time.Second)
 	for {
 		select {
@@ -42,18 +50,14 @@ func Manager(ctx context.Context, conf *FileWriter) {
 	}
 }
 
-func Worker(ctx context.Context, conf *FileWriter) {
+func worker(ctx context.Context, conf *fileWriterConfig) {
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case chunk := <-conf.input:
-                        tempfilepath := filepath.Join(conf.tempdir, fmt.Sprintf("%s___%x.tmp", strings.ReplaceAll(chunk.Path, "/", "_"), chunk.Hash))
-			tempfile, err := os.OpenFile(
-			        tempfilepath,
-				os.O_RDWR|os.O_CREATE,
-				0600,
-			}
+			tempfilepath := filepath.Join(conf.tempdir, fmt.Sprintf("%s___%x.tmp", pathReplace(chunk.Path), chunk.Hash))
+			tempfile, err := os.OpenFile(tempfilepath, os.O_RDWR|os.O_CREATE, 0600)
 			if err != nil {
 				logrus.WithFields(logrus.Fields{
 					"TempFile": tempfilepath,
@@ -64,6 +68,7 @@ func Worker(ctx context.Context, conf *FileWriter) {
 			}
 
 			_, err = tempfile.WriteAt(chunk.Data, chunk.DataOffset)
+			err2 := tempfile.Close() // Not using defer because of overhead concerns
 			if err != nil {
 				logrus.WithFields(logrus.Fields{
 					"TempFile": tempfilepath,
@@ -71,6 +76,14 @@ func Worker(ctx context.Context, conf *FileWriter) {
 					"Hash":     fmt.Sprintf("%x", chunk.Hash),
 				}).Errorf("Error writing to tempfile: %v", err)
 				continue
+			}
+
+			if err2 != nil {
+				logrus.WithFields(logrus.Fields{
+					"TempFile": tempfilepath,
+					"Path":     chunk.Path,
+					"Hash":     fmt.Sprintf("%x", chunk.Hash),
+				}).Errorf("Error closing tempfile: %v", err)
 			}
 
 			conf.cache.Store(tempfilepath, &structs.OpenTempFile{
@@ -84,14 +97,14 @@ func Worker(ctx context.Context, conf *FileWriter) {
 }
 
 func CreateFileWriter(ctx context.Context, tempdir string, input chan *structs.Chunk, output chan *structs.OpenTempFile, workercount int) {
-	conf := FileWriter{
+	conf := fileWriterConfig{
 		tempdir: tempdir,
 		input:   input,
 		output:  output,
 		cache:   utils.RWMutexMap[string, *structs.OpenTempFile]{},
 	}
 	for i := 0; i < workercount; i++ {
-		go Worker(ctx, &conf)
+		go worker(ctx, &conf)
 	}
-	go Manager(ctx, &conf)
+	go manager(ctx, &conf)
 }
