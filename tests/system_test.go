@@ -60,6 +60,14 @@ func getDiff(t *testing.T, path1 string, path2 string) int {
 	return diff
 }
 
+func pathReplace(path string) string {
+	newpath := path
+	newpath = strings.ReplaceAll(newpath, "/", "_")
+	newpath = strings.ReplaceAll(newpath, "\\", "_")
+	newpath = strings.ReplaceAll(newpath, ":", "_")
+	return newpath
+}
+
 func waitForFinishedFile(t *testing.T, db *gorm.DB, path string, timeout time.Duration, outdir string) {
 	start := time.Now()
 	ticker := time.NewTicker(1 * time.Second)
@@ -74,7 +82,7 @@ func waitForFinishedFile(t *testing.T, db *gorm.DB, path string, timeout time.Du
 			continue
 		}
 		if !file.Finished || !file.Success {
-			tmpfilepath := filepath.Join(outdir, "tempfiles", fmt.Sprintf("%s___%x.tmp", strings.ReplaceAll(file.Path, "/", "_"), file.Hash))
+			tmpfilepath := filepath.Join(outdir, "tempfiles", fmt.Sprintf("%s___%x.tmp", pathReplace(file.Path), file.Hash))
 			diff := getDiff(t, path, tmpfilepath)
 			t.Fatalf("File '%s' transferred but not successfully %d different bytes", path, diff)
 		} else {
@@ -195,27 +203,4 @@ func TestLargeFile(t *testing.T) {
 		t.Fatal(err)
 	}
 	waitForFinishedFile(t, receiverdb, testfile, time.Minute*2, conf.OutDir)
-}
-
-func TestVeryLargeFile(t *testing.T) {
-	conf := config.Config{
-		ReceiverIP:       "127.0.0.1",
-		ReceiverPort:     5000,
-		BandwidthLimit:   10 * 1024 * 1024,
-		ChunkSize:        8192,
-		ChunkFecRequired: 5,
-		ChunkFecTotal:    10,
-		OutDir:           "tests_out",
-	}
-	senderdb, receiverdb, teardowntest := setupTest(t, conf)
-	defer teardowntest()
-
-	testfile := tempFile(t, 1*1024*1024*1024)
-	defer os.Remove(testfile)
-
-	err := database.QueueFileForSending(senderdb, testfile)
-	if err != nil {
-		t.Fatal(err)
-	}
-	waitForFinishedFile(t, receiverdb, testfile, time.Minute*20, conf.OutDir)
 }
