@@ -1,4 +1,5 @@
 [![Coverage Status](https://coveralls.io/repos/github/danlapid/oneway-filesync/badge.svg?branch=main)](https://coveralls.io/github/danlapid/oneway-filesync?branch=main)
+
 go run oneway-filesync/cmd/receiver \
 go run oneway-filesync/cmd/sender
 
