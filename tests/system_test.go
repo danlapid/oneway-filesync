@@ -87,6 +87,7 @@ func waitForFinishedFile(t *testing.T, db *gorm.DB, path string, endtime time.Ti
 			diff := getDiff(t, path, tmpfilepath)
 			t.Fatalf("File '%s' transferred but not successfully %d different bytes", path, diff)
 		} else {
+			t.Logf("File '%s' transferred successfully", path)
 			return
 		}
 	}
