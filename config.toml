@@ -5,3 +5,4 @@ ChunkSize = 8192
 ChunkFecRequired = 5
 ChunkFecTotal = 10
 OutDir = "./out"
+WatchDir = "./tmp"
