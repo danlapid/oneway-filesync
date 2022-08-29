@@ -195,7 +195,7 @@ func TestLargeFile(t *testing.T) {
 	conf := config.Config{
 		ReceiverIP:       "127.0.0.1",
 		ReceiverPort:     5000,
-		BandwidthLimit:   4 * 1024 * 1024,
+		BandwidthLimit:   1024 * 1024,
 		ChunkSize:        8192,
 		ChunkFecRequired: 5,
 		ChunkFecTotal:    10,
@@ -205,7 +205,7 @@ func TestLargeFile(t *testing.T) {
 	senderdb, receiverdb, teardowntest := setupTest(t, conf)
 	defer teardowntest()
 
-	testfile := tempFile(t, 50*1024*1024, "")
+	testfile := tempFile(t, 20*1024*1024, "")
 	defer os.Remove(testfile)
 
 	err := database.QueueFileForSending(senderdb, testfile)
@@ -222,7 +222,7 @@ func TestWatcherFiles(t *testing.T) {
 	conf := config.Config{
 		ReceiverIP:       "127.0.0.1",
 		ReceiverPort:     5000,
-		BandwidthLimit:   4 * 1024 * 1024,
+		BandwidthLimit:   1024 * 1024,
 		ChunkSize:        8192,
 		ChunkFecRequired: 5,
 		ChunkFecTotal:    10,
