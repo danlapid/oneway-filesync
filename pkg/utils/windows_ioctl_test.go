@@ -8,6 +8,30 @@ import (
 	"testing"
 )
 
+func sendCtrlC(t *testing.T, pid int) {
+	d, e := syscall.LoadDLL("kernel32.dll")
+	if e != nil {
+		t.Fatalf("LoadDLL: %v\n", e)
+	}
+	p, e := d.FindProc("GenerateConsoleCtrlEvent")
+	if e != nil {
+		t.Fatalf("FindProc: %v\n", e)
+	}
+	r, _, e := p.Call(syscall.CTRL_C_EVENT, uintptr(pid))
+	if r == 0 {
+		t.Fatalf("GenerateConsoleCtrlEvent: %v\n", e)
+	}
+}
+
+func TestCtrlC(t *testing.T) {
+	ch := CtrlC()
+	sendCtrlC(t, os.Getpid())
+	_, ok := <-ch
+	if !ok {
+		t.Fatal("Ctrl c not caught")
+	}
+}
+
 func TestGetReadBuffer(t *testing.T) {
 	type args struct {
 		rawconn syscall.RawConn

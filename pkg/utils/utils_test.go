@@ -26,22 +26,6 @@ func Test_formatFilePath(t *testing.T) {
 	}
 }
 
-func TestCtrlC(t *testing.T) {
-	ch := CtrlC()
-	p, err := os.FindProcess(os.Getpid())
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = p.Signal(os.Interrupt)
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, ok := <-ch
-	if !ok {
-		t.Fatal("Ctrl c not caught")
-	}
-}
-
 func TestInitializeLogging(t *testing.T) {
 	type args struct {
 		logFile string

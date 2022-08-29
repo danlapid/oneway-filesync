@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"oneway-filesync/pkg/utils"
+	"os"
 	"testing"
 	"time"
 
@@ -107,5 +108,21 @@ func TestGetAvailableBytes(t *testing.T) {
 			t.Errorf("GetAvailableBytes() = %v, want %v", avail, expected)
 			return
 		}
+	}
+}
+
+func TestCtrlC(t *testing.T) {
+	ch := utils.CtrlC()
+	p, err := os.FindProcess(os.Getpid())
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = p.Signal(os.Interrupt)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, ok := <-ch
+	if !ok {
+		t.Fatal("Ctrl c not caught")
 	}
 }
