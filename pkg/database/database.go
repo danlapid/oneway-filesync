@@ -37,8 +37,9 @@ func configureDatabase(db *gorm.DB) error {
 func OpenDatabase(tableprefix string) (*gorm.DB, error) {
 	db, err := gorm.Open(sqlite.Open(DBFILE),
 		&gorm.Config{
-			NamingStrategy: schema.NamingStrategy{TablePrefix: tableprefix},
-			Logger:         gormlogger.Discard,
+			SkipDefaultTransaction: true,
+			NamingStrategy:         schema.NamingStrategy{TablePrefix: tableprefix},
+			Logger:                 gormlogger.Discard,
 		})
 	if err != nil {
 		return nil, err
