@@ -4,6 +4,7 @@ package utils_test
 
 import (
 	"oneway-filesync/pkg/utils"
+	"os"
 	"syscall"
 	"testing"
 )
@@ -24,7 +25,7 @@ func sendCtrlC(t *testing.T, pid int) {
 }
 
 func TestCtrlC(t *testing.T) {
-	ch := CtrlC()
+	ch := utils.CtrlC()
 	sendCtrlC(t, os.Getpid())
 	_, ok := <-ch
 	if !ok {
