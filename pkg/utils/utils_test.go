@@ -128,11 +128,6 @@ func TestGetAvailableBytes(t *testing.T) {
 	}
 	defer receiving_conn.Close()
 
-	err = receiving_conn.SetReadBuffer(8192 * 10)
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	sending_conn, err := net.Dial("udp", fmt.Sprintf("%s:%d", ip, port))
 	if err != nil {
 		logrus.Errorf("Error creating udp socket: %v", err)
@@ -147,7 +142,7 @@ func TestGetAvailableBytes(t *testing.T) {
 
 	chunksize := 8192
 	chunk := make([]byte, chunksize)
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 5; i++ {
 		expected := (i + 1) * chunksize
 		_, err := sending_conn.Write(chunk)
 		if err != nil {
