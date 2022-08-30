@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"math/rand"
 	"net"
 	"os"
 	"testing"
@@ -66,7 +67,7 @@ func TestCtrlC(t *testing.T) {
 
 func TestGetReadBuffer(t *testing.T) {
 	ip := "127.0.0.1"
-	port := 54249
+	port := rand.Intn(30000) + 30000
 	addr := net.UDPAddr{
 		IP:   net.ParseIP(ip),
 		Port: port,
@@ -116,7 +117,7 @@ func TestGetReadBuffer(t *testing.T) {
 
 func TestGetAvailableBytes(t *testing.T) {
 	ip := "127.0.0.1"
-	port := 54249
+	port := rand.Intn(30000) + 30000
 	addr := net.UDPAddr{
 		IP:   net.ParseIP(ip),
 		Port: port,
