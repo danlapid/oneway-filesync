@@ -10,6 +10,17 @@ import (
 	"golang.org/x/sys/unix"
 )
 
+func sendCtrlC(int pid) error {
+	p, err := os.FindProcess(pid)
+	if err != nil {
+		return err
+	}
+	err = p.Signal(os.Interrupt)
+	if err != nil {
+		return err
+	}
+}
+
 func GetReadBuffer(rawconn syscall.RawConn) (int, error) {
 	var err error
 	var bufsize int
@@ -34,6 +45,7 @@ func GetAvailableBytes(rawconn syscall.RawConn) (int, error) {
 	} else {
 		return 0, errors.New("unsupported OS")
 	}
+
 	var err error
 	var avail int
 	err2 := rawconn.Control(func(fd uintptr) {
@@ -46,5 +58,4 @@ func GetAvailableBytes(rawconn syscall.RawConn) (int, error) {
 		return 0, err
 	}
 	return avail, nil
-
 }

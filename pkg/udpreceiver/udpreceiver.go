@@ -6,7 +6,6 @@ import (
 	"net"
 	"oneway-filesync/pkg/structs"
 	"oneway-filesync/pkg/utils"
-	"runtime"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -19,11 +18,6 @@ type udpReceiverConfig struct {
 }
 
 func manager(ctx context.Context, conf *udpReceiverConfig) {
-	if runtime.GOOS != "linux" && runtime.GOOS != "darwin" {
-		logrus.Infof("Buffers fill detection not supported on the current OS")
-		return
-	}
-
 	ticker := time.NewTicker(200 * time.Millisecond)
 	rawconn, err := conf.conn.SyscallConn()
 	if err != nil {

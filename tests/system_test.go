@@ -13,7 +13,6 @@ import (
 	"oneway-filesync/pkg/watcher"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -217,9 +216,6 @@ func TestLargeFile(t *testing.T) {
 }
 
 func TestWatcherFiles(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		return
-	}
 	conf := config.Config{
 		ReceiverIP:       "127.0.0.1",
 		ReceiverPort:     5000,
