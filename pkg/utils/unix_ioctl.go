@@ -4,13 +4,14 @@ package utils
 
 import (
 	"errors"
+	"os"
 	"runtime"
 	"syscall"
 
 	"golang.org/x/sys/unix"
 )
 
-func sendCtrlC(int pid) error {
+func sendCtrlC(pid int) error {
 	p, err := os.FindProcess(pid)
 	if err != nil {
 		return err
@@ -19,6 +20,7 @@ func sendCtrlC(int pid) error {
 	if err != nil {
 		return err
 	}
+	return nil
 }
 
 func GetReadBuffer(rawconn syscall.RawConn) (int, error) {
