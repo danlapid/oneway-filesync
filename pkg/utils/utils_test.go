@@ -103,6 +103,8 @@ func TestGetReadBuffer(t *testing.T) {
 				t.Error(err)
 				return
 			}
+			time.Sleep(600 * time.Millisecond)
+
 			got, err := GetReadBuffer(rawconn)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetReadBuffer() error = %v, wantErr %v", err, tt.wantErr)
@@ -150,7 +152,8 @@ func TestGetAvailableBytes(t *testing.T) {
 			t.Error(err)
 			return
 		}
-		time.Sleep(300 * time.Millisecond)
+		time.Sleep(600 * time.Millisecond)
+
 		avail, err := GetAvailableBytes(rawconn)
 		if err != nil {
 			t.Errorf("GetAvailableBytes() error = %v", err)
