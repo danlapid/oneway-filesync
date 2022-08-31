@@ -3,7 +3,6 @@
 package utils
 
 import (
-	"errors"
 	"os"
 	"runtime"
 	"syscall"
@@ -35,29 +34,10 @@ func GetReadBuffer(rawconn syscall.RawConn) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	return bufsize, nil
-}
-
-func GetAvailableBytes(rawconn syscall.RawConn) (int, error) {
-	var FIONREAD uint = 0
 	if runtime.GOOS == "linux" {
-		FIONREAD = 0x541B
-	} else if runtime.GOOS == "darwin" {
-		FIONREAD = 0x4004667f
+		// See https://man7.org/linux/man-pages/man7/socket.7.html SO_RCVBUF
+		return bufsize / 2, nil
 	} else {
-		return 0, errors.New("unsupported OS")
+		return bufsize, nil
 	}
-
-	var err error
-	var avail int
-	err2 := rawconn.Control(func(fd uintptr) {
-		avail, err = unix.IoctlGetInt(int(fd), FIONREAD)
-	})
-	if err2 != nil {
-		return 0, err2
-	}
-	if err != nil {
-		return 0, err
-	}
-	return avail, nil
 }

@@ -13,7 +13,7 @@ func main() {
 		return
 	}
 
-	db, err := database.OpenDatabase(database.DBFILE, "s_")
+	db, err := database.OpenDatabase("s_")
 	if err != nil {
 		fmt.Printf("%v\n", err)
 		return

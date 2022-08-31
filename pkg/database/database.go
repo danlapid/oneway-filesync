@@ -34,12 +34,11 @@ func configureDatabase(db *gorm.DB) error {
 // eventually we can choose to receive the user, password, host, database name
 // from the the configuration file, because we expect this database to be run locally
 // we leave it as defaults for now.
-func OpenDatabase(dbfile string, tableprefix string) (*gorm.DB, error) {
+func OpenDatabase(tableprefix string) (*gorm.DB, error) {
 	db, err := gorm.Open(sqlite.Open(DBFILE),
 		&gorm.Config{
-			SkipDefaultTransaction: true,
-			NamingStrategy:         schema.NamingStrategy{TablePrefix: tableprefix},
-			Logger:                 gormlogger.Discard,
+			NamingStrategy: schema.NamingStrategy{TablePrefix: tableprefix},
+			Logger:         gormlogger.Discard,
 		})
 	if err != nil {
 		return nil, err

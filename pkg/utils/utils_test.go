@@ -94,7 +94,7 @@ func TestGetReadBuffer(t *testing.T) {
 		wantErr bool
 	}{
 		{"test1", args{8 * 1024}, 8 * 1024, false},
-		{"test2", args{1024 * 1024}, 1024 * 1024, false},
+		{"test2", args{100 * 1024}, 100 * 1024, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -103,7 +103,7 @@ func TestGetReadBuffer(t *testing.T) {
 				t.Error(err)
 				return
 			}
-			time.Sleep(600 * time.Millisecond)
+			time.Sleep(300 * time.Millisecond)
 
 			got, err := GetReadBuffer(rawconn)
 			if (err != nil) != tt.wantErr {
@@ -152,7 +152,7 @@ func TestGetAvailableBytes(t *testing.T) {
 			t.Error(err)
 			return
 		}
-		time.Sleep(600 * time.Millisecond)
+		time.Sleep(300 * time.Millisecond)
 
 		avail, err := GetAvailableBytes(rawconn)
 		if err != nil {
