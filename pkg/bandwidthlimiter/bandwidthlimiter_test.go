@@ -27,16 +27,20 @@ func TestCreateBandwidthLimiter(t *testing.T) {
 			expected := (float64(tt.args.chunk_size) / float64(tt.args.bytes_per_sec)) * float64(tt.args.chunk_count)
 			ch_in := make(chan *structs.Chunk, tt.args.chunk_count)
 			ch_out := make(chan *structs.Chunk, tt.args.chunk_count)
+
+			chunk := structs.Chunk{Data: make([]byte, tt.args.chunk_size)}
 			for i := 0; i < tt.args.chunk_count; i++ {
-				ch_in <- &structs.Chunk{Data: make([]byte, tt.args.chunk_size)}
+				ch_in <- &chunk
 			}
+
 			ctx, cancel := context.WithCancel(context.Background())
 			start := time.Now()
-			bandwidthlimiter.CreateBandwidthLimiter(ctx, tt.args.bytes_per_sec, ch_in, ch_out)
+			bandwidthlimiter.CreateBandwidthLimiter(ctx, tt.args.bytes_per_sec/tt.args.chunk_size, ch_in, ch_out)
 			for i := 0; i < tt.args.chunk_count; i++ {
 				<-ch_out
 			}
 			timepast := time.Since(start)
+
 			if timepast > time.Duration(expected+1)*time.Second || timepast < time.Duration(expected-1)*time.Second {
 				t.Fatalf("Bandwidthlimiter took %f seconds instead of %f", timepast.Seconds(), expected)
 			}
