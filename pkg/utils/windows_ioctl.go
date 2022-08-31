@@ -8,10 +8,10 @@ import (
 )
 
 var (
-	ws2_32                   = syscall.NewLazyDLL("ws2_32.dll")
-	ioctlsocket              = ws2_32.NewProc("ioctlsocket")
-	kernel32                 = syscall.NewLazyDLL("kernel32.dll")
-	generateConsoleCtrlEvent = kernel32.NewProc("GenerateConsoleCtrlEvent")
+	ws2_32      = syscall.NewLazyDLL("ws2_32.dll")
+	ioctlsocket = ws2_32.NewProc("ioctlsocket")
+	// kernel32                 = syscall.NewLazyDLL("kernel32.dll")
+	// generateConsoleCtrlEvent = kernel32.NewProc("GenerateConsoleCtrlEvent")
 )
 
 const FIONREAD int32 = 0x4004667f
@@ -33,14 +33,15 @@ func getsockoptInt(fd syscall.Handle, level, opt int) (int, error) {
 	return int(v), err
 }
 
-func sendCtrlC(pid int) error {
-	r, _, e := generateConsoleCtrlEvent.Call(syscall.CTRL_C_EVENT, uintptr(pid))
-	if r == 0 {
-		return e
-	} else {
-		return nil
-	}
-}
+// Removed CtrlC test due to: https://github.com/golang/go/issues/46354
+// func sendCtrlC(pid int) error {
+// 	r, _, e := generateConsoleCtrlEvent.Call(syscall.CTRL_C_EVENT, uintptr(pid))
+// 	if r == 0 {
+// 		return e
+// 	} else {
+// 		return nil
+// 	}
+// }
 
 func GetReadBuffer(rawconn syscall.RawConn) (int, error) {
 	var err error

@@ -3,24 +3,24 @@
 package utils
 
 import (
-	"os"
 	"runtime"
 	"syscall"
 
 	"golang.org/x/sys/unix"
 )
 
-func sendCtrlC(pid int) error {
-	p, err := os.FindProcess(pid)
-	if err != nil {
-		return err
-	}
-	err = p.Signal(os.Interrupt)
-	if err != nil {
-		return err
-	}
-	return nil
-}
+// Removed CtrlC test due to: https://github.com/golang/go/issues/46354
+// func sendCtrlC(pid int) error {
+// 	p, err := os.FindProcess(pid)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	err = p.Signal(os.Interrupt)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	return nil
+// }
 
 func GetReadBuffer(rawconn syscall.RawConn) (int, error) {
 	var err error

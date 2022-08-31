@@ -53,6 +53,7 @@ func TestInitializeLogging(t *testing.T) {
 	}
 }
 
+// Removed CtrlC test due to: https://github.com/golang/go/issues/46354
 // func TestCtrlC(t *testing.T) {
 // 	ch := CtrlC()
 // 	err := sendCtrlC(os.Getpid())
