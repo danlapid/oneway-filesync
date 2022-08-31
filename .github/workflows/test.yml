@@ -39,5 +39,5 @@ jobs:
         if: success() || failure() # run this step even if previous step failed
         with:
           name: ${{ matrix.os }} Tests
-          paths: report.xml
+          path: report.xml
           reporter: jest-junit
