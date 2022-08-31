@@ -4,6 +4,7 @@ import (
 	"context"
 	"oneway-filesync/pkg/config"
 	"oneway-filesync/pkg/database"
+	"os"
 	"path/filepath"
 	"time"
 
@@ -11,6 +12,15 @@ import (
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
+
+func isDirectory(path string) (bool, error) {
+	fileInfo, err := os.Stat(path)
+	if err != nil {
+		return false, err
+	}
+
+	return fileInfo.IsDir(), err
+}
 
 type watcherConfig struct {
 	db    *gorm.DB
@@ -28,8 +38,11 @@ func worker(ctx context.Context, conf *watcherConfig) {
 			notify.Stop(conf.input)
 			return
 		case ei := <-conf.input:
-			conf.cache[ei.Path()] = time.Now()
-			logrus.Infof("Noticed change in file '%s'", ei.Path())
+			isdir, err := isDirectory(ei.Path())
+			if err == nil && !isdir {
+				conf.cache[ei.Path()] = time.Now()
+				logrus.Infof("Noticed change in file '%s'", ei.Path())
+			}
 		case <-ticker.C:
 			for path, lastupdated := range conf.cache {
 				if time.Since(lastupdated).Seconds() > 30 {
@@ -60,7 +73,7 @@ func CreateWatcher(ctx context.Context, db *gorm.DB, watchdir string, input chan
 }
 
 func Watcher(ctx context.Context, db *gorm.DB, conf config.Config) {
-	events := make(chan notify.EventInfo, 100)
+	events := make(chan notify.EventInfo, 500)
 
 	CreateWatcher(ctx, db, conf.WatchDir, events)
 }

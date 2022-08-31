@@ -147,6 +147,19 @@ func setupTest(t *testing.T, conf config.Config) (*gorm.DB, *gorm.DB, func()) {
 		if err := database.ClearDatabase(senderdb); err != nil {
 			t.Log(err)
 		}
+		if indb, err := receiverdb.DB(); err == nil {
+			if err := indb.Close(); err != nil {
+				t.Log(err)
+			}
+		}
+		if indb, err := senderdb.DB(); err == nil {
+			if err := indb.Close(); err != nil {
+				t.Log(err)
+			}
+		}
+		if err := os.Remove(database.DBFILE); err != nil {
+			t.Log(err)
+		}
 	}
 }
 
