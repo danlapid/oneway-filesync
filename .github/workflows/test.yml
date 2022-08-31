@@ -40,6 +40,7 @@ jobs:
           name: ${{ matrix.os }} Tests
           path: report.xml
           reporter: java-junit
+          fail-on-error: "false"
         if: always()
 
       - name: Test Summary
