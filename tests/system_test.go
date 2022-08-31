@@ -250,6 +250,8 @@ func TestWatcherFiles(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer os.Remove(tmpdir1)
+	time.Sleep(time.Second)
+
 	for i := 0; i < 10; i++ {
 		tempfile := tempFile(t, 30000, tmpdir1)
 		defer os.Remove(tempfile)
@@ -262,6 +264,8 @@ func TestWatcherFiles(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer os.Remove(tmpdir2)
+	time.Sleep(time.Second)
+
 	for i := 0; i < 10; i++ {
 		tempfile := tempFile(t, 30000, tmpdir2)
 		defer os.Remove(tempfile)
