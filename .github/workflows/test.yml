@@ -71,6 +71,9 @@ jobs:
         run: |
           go env
           go get -v -x github.com/mattn/go-sqlite3@v1.14.12
+          go test -v -c -race oneway-filesync/pkg/config
+          go test -v -c -race oneway-filesync/pkg/utils
+          go test -v -c -race oneway-filesync/tests
 
       - name: test
         run: |
