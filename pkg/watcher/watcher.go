@@ -61,8 +61,7 @@ func worker(ctx context.Context, conf *watcherConfig) {
 
 func CreateWatcher(ctx context.Context, db *gorm.DB, watchdir string, input chan notify.EventInfo) {
 	if err := notify.Watch(filepath.Join(watchdir, "..."), input, notify.Write, notify.Create); err != nil {
-		logrus.Errorf("%v", err)
-		return
+		logrus.Fatalf("%v", err)
 	}
 	conf := watcherConfig{
 		db:    db,

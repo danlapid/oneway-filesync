@@ -135,6 +135,7 @@ func setupTest(t *testing.T, conf config.Config) (*gorm.DB, *gorm.DB, func()) {
 
 	return senderdb, receiverdb, func() {
 		cancel()
+		time.Sleep(2 * time.Second)
 		if err := os.RemoveAll(conf.WatchDir); err != nil {
 			t.Log(err)
 		}

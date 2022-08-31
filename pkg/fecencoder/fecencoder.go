@@ -25,8 +25,7 @@ type fecEncoderConfig struct {
 func worker(ctx context.Context, conf *fecEncoderConfig) {
 	fec, err := reedsolomon.New(conf.required, conf.total-conf.required)
 	if err != nil {
-		logrus.Errorf("Error creating fec object: %v", err)
-		return
+		logrus.Fatalf("Error creating fec object: %v", err)
 	}
 	for {
 		select {

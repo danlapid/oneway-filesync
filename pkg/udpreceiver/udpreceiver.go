@@ -82,8 +82,7 @@ func CreateUdpReceiver(ctx context.Context, ip string, port int, chunksize int, 
 
 	conn, err := net.ListenUDP("udp", &addr)
 	if err != nil {
-		logrus.Errorf("Error creating udp socket: %v", err)
-		return
+		logrus.Fatalf("Error creating udp socket: %v", err)
 	}
 	go func() {
 		<-ctx.Done()
