@@ -30,16 +30,16 @@ jobs:
           go-version: ${{ matrix.go }}
 
       - name: test
-        if: runner.os == 'Windows'
-        run: |
-          go install github.com/jstemmer/go-junit-report/v2@latest
-          go test -v ./... 2>&1 | go-junit-report -set-exit-code -iocopy -out report.xml
-
-      - name: test-windows
         if: runner.os != 'Windows'
         run: |
           go install github.com/jstemmer/go-junit-report/v2@latest
           go test -v -race ./... 2>&1 | go-junit-report -set-exit-code -iocopy -out report.xml
+
+      - name: test-windows
+        if: runner.os == 'Windows'
+        run: |
+          go install github.com/jstemmer/go-junit-report/v2@latest
+          go test -v ./... 2>&1 | go-junit-report -set-exit-code -iocopy -out report.xml
 
       - name: Test Report
         uses: dorny/test-reporter@v1
