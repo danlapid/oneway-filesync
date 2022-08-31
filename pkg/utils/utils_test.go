@@ -53,17 +53,17 @@ func TestInitializeLogging(t *testing.T) {
 	}
 }
 
-func TestCtrlC(t *testing.T) {
-	ch := CtrlC()
-	err := sendCtrlC(os.Getpid())
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, ok := <-ch
-	if !ok {
-		t.Fatal("Ctrl c not caught")
-	}
-}
+// func TestCtrlC(t *testing.T) {
+// 	ch := CtrlC()
+// 	err := sendCtrlC(os.Getpid())
+// 	if err != nil {
+// 		t.Fatal(err)
+// 	}
+// 	_, ok := <-ch
+// 	if !ok {
+// 		t.Fatal("Ctrl c not caught")
+// 	}
+// }
 
 func TestGetReadBuffer(t *testing.T) {
 	ip := "127.0.0.1"
