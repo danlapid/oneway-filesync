@@ -35,7 +35,7 @@ func TestCreateBandwidthLimiter(t *testing.T) {
 
 			ctx, cancel := context.WithCancel(context.Background())
 			start := time.Now()
-			bandwidthlimiter.CreateBandwidthLimiter(ctx, tt.args.bytes_per_sec/tt.args.chunk_size, ch_in, ch_out)
+			bandwidthlimiter.CreateBandwidthLimiter(ctx, tt.args.bytes_per_sec, tt.args.chunk_size, ch_in, ch_out)
 			for i := 0; i < tt.args.chunk_count; i++ {
 				<-ch_out
 			}
