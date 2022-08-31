@@ -34,15 +34,10 @@ jobs:
           go install github.com/jstemmer/go-junit-report/v2@latest
           go test -v -race ./... 2>&1 | go-junit-report -set-exit-code -iocopy -out report.xml
 
-      - name: Test Summary
-        uses: test-summary/action@v1
+      - name: Test Report
+        uses: dorny/test-reporter@v1
+        if: success() || failure() # run this step even if previous step failed
         with:
-          paths: report.xml
-        if: always()
-
-      - name: Upload test summary
-        uses: actions/upload-artifact@v3
-        with:
-          name: test-summary
-          path: test-summary.md
-        if: always()
+          name: ${{ matrix.os }} Tests
+          path: report.xml
+          reporter: java-junit
