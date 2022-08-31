@@ -8,8 +8,6 @@ on:
       - main
 jobs:
   test:
-    needs:
-      - build
     strategy:
       fail-fast: false
       matrix:

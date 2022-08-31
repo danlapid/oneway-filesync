@@ -6,8 +6,6 @@ on:
 
 jobs:
   build:
-    needs:
-      - lint
     strategy:
       fail-fast: false
       matrix:
