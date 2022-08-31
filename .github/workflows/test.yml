@@ -12,9 +12,9 @@ jobs:
       fail-fast: false
       matrix:
         os:
-          # - ubuntu-latest
+          - ubuntu-latest
           - windows-latest
-          # - macos-latest
+          - macos-latest
         go:
           - "1.19"
     runs-on: ${{ matrix.os }}
@@ -47,52 +47,3 @@ jobs:
         with:
           paths: report.xml
         if: always()
-  # wintest:
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       os:
-  #         - windows-latest
-  #       go:
-  #         - "1.19"
-  #   runs-on: ${{ matrix.os }}
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v3
-  #       with:
-  #         fetch-depth: 1
-
-  #     - name: setup Go
-  #       uses: actions/setup-go@v3
-  #       with:
-  #         go-version: ${{ matrix.go }}
-
-  #     - name: sqlite
-  #       run: |
-  #         go env
-  #         go get -v -x github.com/mattn/go-sqlite3@v1.14.12
-  #         go test -v -c -race oneway-filesync/pkg/config
-  #         go test -v -c -race oneway-filesync/pkg/utils
-  #         go test -v -c -race oneway-filesync/pkg/bandwidthlimiter
-  #         go test -v -c -race oneway-filesync/tests
-
-  #     - name: test
-  #       run: |
-  #         go test -v -race ./...
-
-  #     # go install github.com/jstemmer/go-junit-report/v2@latest
-  #     # 2>&1 | go-junit-report -set-exit-code -iocopy -out report.xml
-
-  #     - name: Test Report
-  #       uses: dorny/test-reporter@v1
-  #       with:
-  #         name: ${{ matrix.os }} Tests
-  #         path: report.xml
-  #         reporter: java-junit
-  #       if: always()
-
-  #     - name: Test Summary
-  #       uses: test-summary/action@v1
-  #       with:
-  #         paths: report.xml
-  #       if: always()
