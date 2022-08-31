@@ -30,6 +30,13 @@ jobs:
           go-version: ${{ matrix.go }}
 
       - name: test
+        if: matrix.os == windows-latest
+        run: |
+          go install github.com/jstemmer/go-junit-report/v2@latest
+          go test -v ./... 2>&1 | go-junit-report -set-exit-code -iocopy -out report.xml
+
+      - name: test
+        if: matrix.os != windows-latest
         run: |
           go install github.com/jstemmer/go-junit-report/v2@latest
           go test -v -race ./... 2>&1 | go-junit-report -set-exit-code -iocopy -out report.xml
