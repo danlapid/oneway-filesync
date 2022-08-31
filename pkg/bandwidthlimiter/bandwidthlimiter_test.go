@@ -10,27 +10,30 @@ import (
 
 func TestCreateBandwidthLimiter(t *testing.T) {
 	type args struct {
-		chunks         int
-		chunks_per_sec int
+		chunk_count   int
+		chunk_size    int
+		bytes_per_sec int
 	}
 	tests := []struct {
 		name string
 		args args
 	}{
-		{name: "test1", args: args{chunks: 100, chunks_per_sec: 10}},
+		{name: "test1", args: args{chunk_count: 100, chunk_size: 8000, bytes_per_sec: 240000}},
+		{name: "test2", args: args{chunk_count: 300, chunk_size: 8000, bytes_per_sec: 240000}},
+		{name: "test3", args: args{chunk_count: 60000, chunk_size: 8000, bytes_per_sec: 100 * 1024 * 1024}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			expected := float64(tt.args.chunks) / float64(tt.args.chunks_per_sec)
-			ch_in := make(chan *structs.Chunk, tt.args.chunks)
-			ch_out := make(chan *structs.Chunk, tt.args.chunks)
-			for i := 0; i < tt.args.chunks; i++ {
-				ch_in <- &structs.Chunk{}
+			expected := (float64(tt.args.chunk_size) / float64(tt.args.bytes_per_sec)) * float64(tt.args.chunk_count)
+			ch_in := make(chan *structs.Chunk, tt.args.chunk_count)
+			ch_out := make(chan *structs.Chunk, tt.args.chunk_count)
+			for i := 0; i < tt.args.chunk_count; i++ {
+				ch_in <- &structs.Chunk{Data: make([]byte, tt.args.chunk_size)}
 			}
 			ctx, cancel := context.WithCancel(context.Background())
 			start := time.Now()
-			bandwidthlimiter.CreateBandwidthLimiter(ctx, tt.args.chunks_per_sec, ch_in, ch_out)
-			for i := 0; i < tt.args.chunks; i++ {
+			bandwidthlimiter.CreateBandwidthLimiter(ctx, tt.args.bytes_per_sec, ch_in, ch_out)
+			for i := 0; i < tt.args.chunk_count; i++ {
 				<-ch_out
 			}
 			timepast := time.Since(start)
