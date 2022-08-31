@@ -110,12 +110,12 @@ func tempFile(t *testing.T, size int, tmpdir string) string {
 }
 
 func setupTest(t *testing.T, conf config.Config) (*gorm.DB, *gorm.DB, func()) {
-	senderdb, err := database.OpenDatabase("t_s_")
+	senderdb, err := database.OpenDatabase("file::memory:", "t_s_")
 	if err != nil {
 		t.Fatalf("Failed setting up db with err: %v\n", err)
 	}
 
-	receiverdb, err := database.OpenDatabase("t_r_")
+	receiverdb, err := database.OpenDatabase("file::memory:", "t_r_")
 	if err != nil {
 		t.Fatalf("Failed setting up db with err: %v\n", err)
 	}

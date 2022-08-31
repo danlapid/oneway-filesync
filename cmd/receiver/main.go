@@ -19,7 +19,7 @@ func main() {
 
 	}
 
-	db, err := database.OpenDatabase("r_")
+	db, err := database.OpenDatabase(database.DBFILE, "r_")
 	if err != nil {
 		logrus.Errorf("Failed connecting to db with err %v", err)
 		return
