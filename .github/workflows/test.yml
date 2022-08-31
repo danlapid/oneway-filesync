@@ -36,8 +36,14 @@ jobs:
 
       - name: Test Report
         uses: dorny/test-reporter@v1
-        if: success() || failure() # run this step even if previous step failed
         with:
           name: ${{ matrix.os }} Tests
           path: report.xml
           reporter: java-junit
+        if: always()
+
+      - name: Test Summary
+        uses: test-summary/action@v1
+        with:
+          paths: report.xml
+        if: always()
