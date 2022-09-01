@@ -5,11 +5,10 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"io"
+	"oneway-filesync/pkg/zip"
 	"os"
-	"path/filepath"
 	"time"
 
-	"github.com/alexmullins/zip"
 	"github.com/zhuangsirui/binpacker"
 )
 
@@ -19,23 +18,14 @@ func HashFile(f *os.File, encrypted bool) ([HASHSIZE]byte, error) {
 	var ret [HASHSIZE]byte
 	h := sha256.New()
 
+	var err error
 	if encrypted {
-		zipw := zip.NewWriter(h)
-		w, err := zipw.Encrypt(filepath.Base(f.Name()), `golang`)
-		if err != nil {
-			return ret, err
-		}
-
-		if _, err = io.Copy(w, f); err != nil {
-			return ret, err
-		}
-		if err = zipw.Close(); err != nil {
-			return ret, err
-		}
+		err = zip.ZipFile(h, f)
 	} else {
-		if _, err := io.Copy(h, f); err != nil {
-			return ret, err
-		}
+		_, err = io.Copy(h, f)
+	}
+	if err != nil {
+		return ret, err
 	}
 
 	hash := h.Sum(nil)

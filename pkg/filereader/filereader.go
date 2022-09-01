@@ -7,10 +7,9 @@ import (
 	"io"
 	"oneway-filesync/pkg/database"
 	"oneway-filesync/pkg/structs"
+	"oneway-filesync/pkg/zip"
 	"os"
-	"path/filepath"
 
-	"github.com/alexmullins/zip"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -60,31 +59,6 @@ func (w *chunkWriter) Close() error {
 	return nil
 }
 
-func reader(f *os.File, w io.Writer) error {
-	if _, err := io.Copy(w, f); err != nil {
-		return fmt.Errorf("error copying file contents: %v", err)
-	}
-	return nil
-}
-
-func encryptedreader(f *os.File, w io.Writer) error {
-	ziparchive := zip.NewWriter(w)
-	zipfile, err := ziparchive.Encrypt(filepath.Base(f.Name()), `filesync`)
-	if err != nil {
-		return fmt.Errorf("error creating file in zip: %v", err)
-	}
-
-	if _, err = io.Copy(zipfile, f); err != nil {
-		return fmt.Errorf("error copying file contents: %v", err)
-	}
-
-	if err = ziparchive.Close(); err != nil {
-		return fmt.Errorf("error closing zip file: %v", err)
-	}
-
-	return nil
-}
-
 type fileReaderConfig struct {
 	db        *gorm.DB
 	chunksize int
@@ -100,7 +74,11 @@ func worker(ctx context.Context, conf *fileReaderConfig) {
 		case <-ctx.Done():
 			return
 		case file := <-conf.input:
-			realchunksize := conf.chunksize - structs.ChunkOverhead(file.Path)
+			filepath := file.Path
+			if conf.encrypted {
+				filepath += ".zip"
+			}
+			realchunksize := conf.chunksize - structs.ChunkOverhead(filepath)
 			realchunksize *= conf.required // FEC chunk size is BuffferSize/Required
 
 			l := logrus.WithFields(logrus.Fields{
@@ -114,7 +92,7 @@ func worker(ctx context.Context, conf *fileReaderConfig) {
 				chunksize: 8192,
 				sendchunk: func(data []byte, offset int64) {
 					chunk := structs.Chunk{
-						Path:       file.Path,
+						Path:       filepath,
 						DataOffset: offset,
 						Data:       data,
 					}
@@ -131,9 +109,9 @@ func worker(ctx context.Context, conf *fileReaderConfig) {
 			defer f.Close()
 
 			if conf.encrypted {
-				err = encryptedreader(f, &w)
+				err = zip.ZipFile(&w, f)
 			} else {
-				err = reader(f, &w)
+				_, err = io.Copy(&w, f)
 			}
 
 			if err != nil {

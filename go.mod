@@ -4,10 +4,10 @@ go 1.19
 
 require (
 	github.com/BurntSushi/toml v1.2.0
-	github.com/alexmullins/zip v0.0.0-20180717182244-4affb64b04d0
 	github.com/klauspost/reedsolomon v1.10.0
 	github.com/rjeczalik/notify v0.9.2
 	github.com/sirupsen/logrus v1.9.0
+	github.com/yeka/zip v0.0.0-20180914125537-d046722c6feb
 	github.com/zhuangsirui/binpacker v2.0.0+incompatible
 	golang.org/x/sys v0.0.0-20220829200755-d48e67d00261
 	golang.org/x/time v0.0.0-20220722155302-e5dcc9cfc0b9

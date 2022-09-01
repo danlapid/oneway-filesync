@@ -1,7 +1,5 @@
 github.com/BurntSushi/toml v1.2.0 h1:Rt8g24XnyGTyglgET/PRUNlrUeu9F5L+7FilkXfZgs0=
 github.com/BurntSushi/toml v1.2.0/go.mod h1:CxXYINrC8qIiEnFrOxCa7Jy5BFHlXnUU2pbicEuybxQ=
-github.com/alexmullins/zip v0.0.0-20180717182244-4affb64b04d0 h1:BVts5dexXf4i+JX8tXlKT0aKoi38JwTXSe+3WUneX0k=
-github.com/alexmullins/zip v0.0.0-20180717182244-4affb64b04d0/go.mod h1:FDIQmoMNJJl5/k7upZEnGvgWVZfFeE6qHeN7iCMbCsA=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
@@ -25,6 +23,8 @@ github.com/sirupsen/logrus v1.9.0/go.mod h1:naHLuLoDiP4jHNo9R0sCBMtWGeIprob74mVs
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/testify v1.7.0 h1:nwc3DEeHmmLAfoZucVR881uASk0Mfjw8xYJ99tb5CcY=
 github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
+github.com/yeka/zip v0.0.0-20180914125537-d046722c6feb h1:OJYP70YMddlmGq//EPLj8Vw2uJXmrA+cGSPhXTDpn2E=
+github.com/yeka/zip v0.0.0-20180914125537-d046722c6feb/go.mod h1:9BnoKCcgJ/+SLhfAXj15352hTOuVmG5Gzo8xNRINfqI=
 github.com/zhuangsirui/binpacker v2.0.0+incompatible h1:s2wDYWXT4IznT7NUFzn5gJHqjtWz/zIwUxdiFGNomdk=
 github.com/zhuangsirui/binpacker v2.0.0+incompatible/go.mod h1:TdE7uEZ8Q7sMzbCpk2Y+ksFB8yA5AErPz0meDB612rU=
 golang.org/x/crypto v0.0.0-20220829220503-c86fa9a7ed90 h1:Y/gsMcFOcR+6S6f3YeMKl5g+dZMEWqcz5Czj/GWYbkM=
