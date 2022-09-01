@@ -84,6 +84,7 @@ func QueueFileForSending(db *gorm.DB, path string, encrypted bool) error {
 		Path:      path,
 		Hash:      hash[:],
 		Encrypted: encrypted,
+		Started:   false,
 		Finished:  false,
 		Success:   false,
 	}

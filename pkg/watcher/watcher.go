@@ -24,8 +24,8 @@ func isDirectory(path string) (bool, error) {
 
 type watcherConfig struct {
 	db        *gorm.DB
-	input     chan notify.EventInfo
 	encrypted bool
+	input     chan notify.EventInfo
 	cache     map[string]time.Time
 }
 
@@ -66,8 +66,8 @@ func CreateWatcher(ctx context.Context, db *gorm.DB, watchdir string, encrypted 
 	}
 	conf := watcherConfig{
 		db:        db,
-		input:     input,
 		encrypted: encrypted,
+		input:     input,
 		cache:     make(map[string]time.Time),
 	}
 	go worker(ctx, &conf)

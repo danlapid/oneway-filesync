@@ -119,16 +119,17 @@ func worker(ctx context.Context, conf *fileReaderConfig) {
 			})
 			l.Infof("Started sending file")
 
-			success := true
 			err := sendfile(&file, conf)
 			if err != nil {
-				success = false
-				l.Error(err)
+				file.Success = false
+				l.Errorf("File sending failed with err: %v", err)
+			} else {
+				file.Success = true
+				l.Infof("File successfully finished sending")
+
 			}
 
 			file.Finished = true
-			file.Success = success
-			l.Infof("File finished sending, Success=%t", success)
 			err = conf.db.Save(&file).Error
 			if err != nil {
 				l.Errorf("Error updating Finished in database %v", err)
