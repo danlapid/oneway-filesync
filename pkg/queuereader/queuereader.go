@@ -13,7 +13,7 @@ import (
 
 type queueReaderConfig struct {
 	db     *gorm.DB
-	output chan database.File
+	output chan *database.File
 }
 
 func worker(ctx context.Context, conf *queueReaderConfig) {
@@ -35,13 +35,13 @@ func worker(ctx context.Context, conf *queueReaderConfig) {
 					}).Errorf("Error setting to Started in database %v", err)
 					continue
 				}
-				conf.output <- file
+				conf.output <- &file
 			}
 		}
 	}
 }
 
-func CreateQueueReader(ctx context.Context, db *gorm.DB, output chan database.File) {
+func CreateQueueReader(ctx context.Context, db *gorm.DB, output chan *database.File) {
 	conf := queueReaderConfig{
 		db:     db,
 		output: output,

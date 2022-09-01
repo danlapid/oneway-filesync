@@ -59,12 +59,55 @@ func (w *chunkWriter) Close() error {
 	return nil
 }
 
+func sendfile(file *database.File, conf *fileReaderConfig) error {
+	filepath := file.Path
+	if conf.encrypted {
+		filepath += ".zip"
+	}
+	realchunksize := conf.chunksize - structs.ChunkOverhead(filepath)
+	realchunksize *= conf.required // FEC chunk size is BuffferSize/Required
+
+	w := chunkWriter{
+		chunksize: realchunksize,
+		sendchunk: func(data []byte, offset int64) {
+			chunk := structs.Chunk{
+				Path:       filepath,
+				DataOffset: offset,
+				Data:       data,
+			}
+			copy(chunk.Hash[:], file.Hash)
+			conf.output <- &chunk
+		},
+	}
+
+	f, err := os.Open(file.Path)
+	if err != nil {
+		return fmt.Errorf("error opening file: %v", err)
+	}
+	defer f.Close()
+
+	if conf.encrypted {
+		err = zip.ZipFile(&w, f)
+	} else {
+		_, err = io.Copy(&w, f)
+	}
+	if err != nil {
+		return err
+	}
+
+	err = w.Close()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 type fileReaderConfig struct {
 	db        *gorm.DB
 	chunksize int
 	encrypted bool
 	required  int
-	input     chan database.File
+	input     chan *database.File
 	output    chan *structs.Chunk
 }
 
@@ -74,13 +117,6 @@ func worker(ctx context.Context, conf *fileReaderConfig) {
 		case <-ctx.Done():
 			return
 		case file := <-conf.input:
-			filepath := file.Path
-			if conf.encrypted {
-				filepath += ".zip"
-			}
-			realchunksize := conf.chunksize - structs.ChunkOverhead(filepath)
-			realchunksize *= conf.required // FEC chunk size is BuffferSize/Required
-
 			l := logrus.WithFields(logrus.Fields{
 				"Path": file.Path,
 				"Hash": fmt.Sprintf("%x", file.Hash),
@@ -88,43 +124,10 @@ func worker(ctx context.Context, conf *fileReaderConfig) {
 			l.Infof("Started sending file")
 
 			success := true
-			w := chunkWriter{
-				chunksize: 8192,
-				sendchunk: func(data []byte, offset int64) {
-					chunk := structs.Chunk{
-						Path:       filepath,
-						DataOffset: offset,
-						Data:       data,
-					}
-					copy(chunk.Hash[:], file.Hash)
-					conf.output <- &chunk
-				},
-			}
-
-			f, err := os.Open(file.Path)
-			if err != nil {
-				l.Errorf("error opening file: %v", err)
-				continue
-			}
-			defer f.Close()
-
-			if conf.encrypted {
-				err = zip.ZipFile(&w, f)
-			} else {
-				_, err = io.Copy(&w, f)
-			}
-
+			err := sendfile(file, conf)
 			if err != nil {
 				success = false
 				l.Error(err)
-				continue
-			}
-
-			err = w.Close()
-			if err != nil {
-				success = false
-				l.Error(err)
-				continue
 			}
 
 			file.Finished = true
@@ -138,7 +141,7 @@ func worker(ctx context.Context, conf *fileReaderConfig) {
 	}
 }
 
-func CreateFileReader(ctx context.Context, db *gorm.DB, chunksize int, encrypted bool, required int, input chan database.File, output chan *structs.Chunk, workercount int) {
+func CreateFileReader(ctx context.Context, db *gorm.DB, chunksize int, encrypted bool, required int, input chan *database.File, output chan *structs.Chunk, workercount int) {
 	conf := fileReaderConfig{
 		db:        db,
 		chunksize: chunksize,
