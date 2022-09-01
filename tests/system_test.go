@@ -196,7 +196,7 @@ func TestFileTransfer(t *testing.T) {
 				config.Config{
 					ReceiverIP:       "127.0.0.1",
 					ReceiverPort:     mathrand.Intn(30000) + 30000,
-					BandwidthLimit:   50 * 1024,
+					BandwidthLimit:   100 * 1024,
 					ChunkSize:        8192,
 					EncryptedOutput:  false,
 					ChunkFecRequired: 5,
@@ -213,7 +213,7 @@ func TestFileTransfer(t *testing.T) {
 				config.Config{
 					ReceiverIP:       "127.0.0.1",
 					ReceiverPort:     mathrand.Intn(30000) + 30000,
-					BandwidthLimit:   50 * 1024,
+					BandwidthLimit:   100 * 1024,
 					ChunkSize:        8192,
 					EncryptedOutput:  true,
 					ChunkFecRequired: 5,
@@ -238,7 +238,7 @@ func TestFileTransfer(t *testing.T) {
 					t.Fatal(err)
 				}
 
-				defer waitForFinishedFile(t, receiverdb, testfile, time.Now().Add(time.Minute), tt.args.conf.OutDir)
+				defer waitForFinishedFile(t, receiverdb, testfile, time.Now().Add(2*time.Minute), tt.args.conf.OutDir)
 
 			}
 		})
