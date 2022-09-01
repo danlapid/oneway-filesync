@@ -62,7 +62,7 @@ func ClearDatabase(db *gorm.DB) error {
 // Receives a file path, hashes it and pushes it into the database
 // This should be run from an external program on the source machine
 // The sender reads files from this database and sends them.
-func QueueFileForSending(db *gorm.DB, path string) error {
+func QueueFileForSending(db *gorm.DB, path string, encrypted bool) error {
 	path, err := filepath.Abs(path)
 	if err != nil {
 		return err
@@ -74,7 +74,7 @@ func QueueFileForSending(db *gorm.DB, path string) error {
 	}
 	defer f.Close()
 
-	hash, err := structs.HashFile(f)
+	hash, err := structs.HashFile(f, encrypted)
 	if err != nil {
 		return err
 	}

@@ -36,7 +36,7 @@ func closeFile(file *structs.OpenTempFile, outdir string) error {
 		return err
 	}
 
-	hash, err := structs.HashFile(f)
+	hash, err := structs.HashFile(f, false)
 	err2 := f.Close()
 	if err != nil {
 		l.Errorf("Error hashing tempfile: %v", err)

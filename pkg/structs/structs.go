@@ -6,19 +6,38 @@ import (
 	"encoding/binary"
 	"io"
 	"os"
+	"path/filepath"
 	"time"
 
+	"github.com/alexmullins/zip"
 	"github.com/zhuangsirui/binpacker"
 )
 
 const HASHSIZE = 32 // Using the sha256.Size as const directly causes linting issues
 
-func HashFile(f *os.File) ([HASHSIZE]byte, error) {
+func HashFile(f *os.File, encrypted bool) ([HASHSIZE]byte, error) {
 	var ret [HASHSIZE]byte
 	h := sha256.New()
-	if _, err := io.Copy(h, f); err != nil {
-		return ret, err
+
+	if encrypted {
+		zipw := zip.NewWriter(h)
+		w, err := zipw.Encrypt(filepath.Base(f.Name()), `golang`)
+		if err != nil {
+			return ret, err
+		}
+
+		if _, err = io.Copy(w, f); err != nil {
+			return ret, err
+		}
+		if err = zipw.Close(); err != nil {
+			return ret, err
+		}
+	} else {
+		if _, err := io.Copy(h, f); err != nil {
+			return ret, err
+		}
 	}
+
 	hash := h.Sum(nil)
 	copy(ret[:], hash)
 	return ret, nil

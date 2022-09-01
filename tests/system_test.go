@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	mathrand "math/rand"
 	"oneway-filesync/pkg/config"
 	"oneway-filesync/pkg/database"
 	"oneway-filesync/pkg/receiver"
@@ -167,9 +168,10 @@ func setupTest(t *testing.T, conf config.Config) (*gorm.DB, *gorm.DB, func()) {
 func TestSetup(t *testing.T) {
 	_, _, teardowntest := setupTest(t, config.Config{
 		ReceiverIP:       "127.0.0.1",
-		ReceiverPort:     5000,
+		ReceiverPort:     mathrand.Intn(30000) + 30000,
 		BandwidthLimit:   10000,
 		ChunkSize:        8192,
+		EncryptedOutput:  true,
 		ChunkFecRequired: 5,
 		ChunkFecTotal:    10,
 		OutDir:           "tests_out",
@@ -178,60 +180,78 @@ func TestSetup(t *testing.T) {
 	defer teardowntest()
 }
 
-func TestSmallFile(t *testing.T) {
-	conf := config.Config{
-		ReceiverIP:       "127.0.0.1",
-		ReceiverPort:     5000,
-		BandwidthLimit:   10000,
-		ChunkSize:        8192,
-		ChunkFecRequired: 5,
-		ChunkFecTotal:    10,
-		OutDir:           "tests_out",
-		WatchDir:         "tests_watch",
+func TestFileTransfer(t *testing.T) {
+	type args struct {
+		file_sizes []int
+		conf       config.Config
 	}
-	senderdb, receiverdb, teardowntest := setupTest(t, conf)
-	defer teardowntest()
-
-	testfile := tempFile(t, 500, "")
-	defer os.Remove(testfile)
-
-	err := database.QueueFileForSending(senderdb, testfile)
-	if err != nil {
-		t.Fatal(err)
+	tests := []struct {
+		name string
+		args args
+	}{
+		{
+			name: "Transfer files",
+			args: args{
+				[]int{500, 1024 * 1024},
+				config.Config{
+					ReceiverIP:       "127.0.0.1",
+					ReceiverPort:     mathrand.Intn(30000) + 30000,
+					BandwidthLimit:   50 * 1024,
+					ChunkSize:        8192,
+					EncryptedOutput:  false,
+					ChunkFecRequired: 5,
+					ChunkFecTotal:    10,
+					OutDir:           "tests_out",
+					WatchDir:         "tests_watch",
+				},
+			},
+		},
+		{
+			name: "Transfer files encrypted",
+			args: args{
+				[]int{500, 1024 * 1024},
+				config.Config{
+					ReceiverIP:       "127.0.0.1",
+					ReceiverPort:     mathrand.Intn(30000) + 30000,
+					BandwidthLimit:   50 * 1024,
+					ChunkSize:        8192,
+					EncryptedOutput:  true,
+					ChunkFecRequired: 5,
+					ChunkFecTotal:    10,
+					OutDir:           "tests_out",
+					WatchDir:         "tests_watch",
+				},
+			},
+		},
 	}
-	waitForFinishedFile(t, receiverdb, testfile, time.Now().Add(time.Minute), conf.OutDir)
-}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			senderdb, receiverdb, teardowntest := setupTest(t, tt.args.conf)
+			defer teardowntest()
 
-func TestLargeFile(t *testing.T) {
-	conf := config.Config{
-		ReceiverIP:       "127.0.0.1",
-		ReceiverPort:     5000,
-		BandwidthLimit:   1024 * 1024,
-		ChunkSize:        8192,
-		ChunkFecRequired: 5,
-		ChunkFecTotal:    10,
-		OutDir:           "tests_out",
-		WatchDir:         "tests_watch",
+			for _, filesize := range tt.args.file_sizes {
+				testfile := tempFile(t, filesize, "")
+				defer os.Remove(testfile)
+
+				err := database.QueueFileForSending(senderdb, testfile, tt.args.conf.EncryptedOutput)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				defer waitForFinishedFile(t, receiverdb, testfile, time.Now().Add(time.Minute), tt.args.conf.OutDir)
+
+			}
+		})
 	}
-	senderdb, receiverdb, teardowntest := setupTest(t, conf)
-	defer teardowntest()
-
-	testfile := tempFile(t, 20*1024*1024, "")
-	defer os.Remove(testfile)
-
-	err := database.QueueFileForSending(senderdb, testfile)
-	if err != nil {
-		t.Fatal(err)
-	}
-	waitForFinishedFile(t, receiverdb, testfile, time.Now().Add(time.Minute*2), conf.OutDir)
 }
 
 func TestWatcherFiles(t *testing.T) {
 	conf := config.Config{
 		ReceiverIP:       "127.0.0.1",
-		ReceiverPort:     5000,
+		ReceiverPort:     mathrand.Intn(30000) + 30000,
 		BandwidthLimit:   1024 * 1024,
 		ChunkSize:        8192,
+		EncryptedOutput:  true,
 		ChunkFecRequired: 5,
 		ChunkFecTotal:    10,
 		OutDir:           "tests_out",

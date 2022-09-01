@@ -23,9 +23,10 @@ func isDirectory(path string) (bool, error) {
 }
 
 type watcherConfig struct {
-	db    *gorm.DB
-	input chan notify.EventInfo
-	cache map[string]time.Time
+	db        *gorm.DB
+	input     chan notify.EventInfo
+	encrypted bool
+	cache     map[string]time.Time
 }
 
 // To save up on resources we only send files that haven't changed for the past 30 seconds
@@ -47,7 +48,7 @@ func worker(ctx context.Context, conf *watcherConfig) {
 			for path, lastupdated := range conf.cache {
 				if time.Since(lastupdated).Seconds() > 30 {
 					delete(conf.cache, path)
-					err := database.QueueFileForSending(conf.db, path)
+					err := database.QueueFileForSending(conf.db, path, conf.encrypted)
 					if err != nil {
 						logrus.Errorf("%v", err)
 					} else {
@@ -59,14 +60,15 @@ func worker(ctx context.Context, conf *watcherConfig) {
 	}
 }
 
-func CreateWatcher(ctx context.Context, db *gorm.DB, watchdir string, input chan notify.EventInfo) {
+func CreateWatcher(ctx context.Context, db *gorm.DB, watchdir string, encrypted bool, input chan notify.EventInfo) {
 	if err := notify.Watch(filepath.Join(watchdir, "..."), input, notify.Write, notify.Create); err != nil {
 		logrus.Fatalf("%v", err)
 	}
 	conf := watcherConfig{
-		db:    db,
-		input: input,
-		cache: make(map[string]time.Time),
+		db:        db,
+		input:     input,
+		encrypted: encrypted,
+		cache:     make(map[string]time.Time),
 	}
 	go worker(ctx, &conf)
 }
@@ -74,5 +76,5 @@ func CreateWatcher(ctx context.Context, db *gorm.DB, watchdir string, input chan
 func Watcher(ctx context.Context, db *gorm.DB, conf config.Config) {
 	events := make(chan notify.EventInfo, 500)
 
-	CreateWatcher(ctx, db, conf.WatchDir, events)
+	CreateWatcher(ctx, db, conf.WatchDir, conf.EncryptedOutput, events)
 }

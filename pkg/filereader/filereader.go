@@ -1,21 +1,94 @@
 package filereader
 
 import (
-	"bufio"
+	"bytes"
 	"context"
 	"fmt"
 	"io"
 	"oneway-filesync/pkg/database"
 	"oneway-filesync/pkg/structs"
 	"os"
+	"path/filepath"
 
+	"github.com/alexmullins/zip"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
+type chunkWriter struct {
+	buf       bytes.Buffer
+	chunksize int
+	offset    int64
+	sendchunk func(data []byte, offset int64)
+}
+
+func (w *chunkWriter) dumpChunk() error {
+	b := make([]byte, w.chunksize)
+	n, err := w.buf.Read(b)
+	if err != nil {
+		return err
+	}
+	w.sendchunk(b[:n], w.offset)
+	w.offset += int64(n)
+	return nil
+}
+
+func (w *chunkWriter) Write(p []byte) (int, error) {
+	_, err := w.buf.Write(p)
+	if err != nil {
+		return 0, err
+	}
+	if w.buf.Len() > w.chunksize {
+		err := w.dumpChunk()
+		if err != nil {
+			return 0, err
+		}
+	}
+	return len(p), nil
+}
+
+func (w *chunkWriter) Close() error {
+	for {
+		if w.buf.Len() == 0 {
+			break
+		}
+		err := w.dumpChunk()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func reader(f *os.File, w io.Writer) error {
+	if _, err := io.Copy(w, f); err != nil {
+		return fmt.Errorf("error copying file contents: %v", err)
+	}
+	return nil
+}
+
+func encryptedreader(f *os.File, w io.Writer) error {
+	ziparchive := zip.NewWriter(w)
+	zipfile, err := ziparchive.Encrypt(filepath.Base(f.Name()), `filesync`)
+	if err != nil {
+		return fmt.Errorf("error creating file in zip: %v", err)
+	}
+
+	if _, err = io.Copy(zipfile, f); err != nil {
+		return fmt.Errorf("error copying file contents: %v", err)
+	}
+
+	if err = ziparchive.Close(); err != nil {
+		return fmt.Errorf("error closing zip file: %v", err)
+	}
+
+	return nil
+}
+
 type fileReaderConfig struct {
 	db        *gorm.DB
 	chunksize int
+	encrypted bool
 	required  int
 	input     chan database.File
 	output    chan *structs.Chunk
@@ -30,70 +103,68 @@ func worker(ctx context.Context, conf *fileReaderConfig) {
 			realchunksize := conf.chunksize - structs.ChunkOverhead(file.Path)
 			realchunksize *= conf.required // FEC chunk size is BuffferSize/Required
 
-			logrus.WithFields(logrus.Fields{
+			l := logrus.WithFields(logrus.Fields{
 				"Path": file.Path,
 				"Hash": fmt.Sprintf("%x", file.Hash),
-			}).Infof("Started sending file")
+			})
+			l.Infof("Started sending file")
+
+			success := true
+			w := chunkWriter{
+				chunksize: 8192,
+				sendchunk: func(data []byte, offset int64) {
+					chunk := structs.Chunk{
+						Path:       file.Path,
+						DataOffset: offset,
+						Data:       data,
+					}
+					copy(chunk.Hash[:], file.Hash)
+					conf.output <- &chunk
+				},
+			}
 
 			f, err := os.Open(file.Path)
 			if err != nil {
-				logrus.WithFields(logrus.Fields{
-					"Path": file.Path,
-					"Hash": fmt.Sprintf("%x", file.Hash),
-				}).Errorf("Error opening file: %v", err)
+				l.Errorf("error opening file: %v", err)
 				continue
 			}
 			defer f.Close()
 
-			var offset int64 = 0
-			success := false
-			r := bufio.NewReader(f)
-			for {
-				data := make([]byte, realchunksize)
-				n, err := r.Read(data)
-				if err != nil {
-					if n == 0 && err == io.EOF {
-						success = true
-						break
-					}
-					logrus.WithFields(logrus.Fields{
-						"Path": file.Path,
-						"Hash": fmt.Sprintf("%x", file.Hash),
-					}).Errorf("Error reading file: %v", err)
-					break
-				}
-
-				chunk := structs.Chunk{
-					Path:       file.Path,
-					DataOffset: offset,
-					Data:       data[:n],
-				}
-				copy(chunk.Hash[:], file.Hash)
-				conf.output <- &chunk
-				offset += int64(n)
+			if conf.encrypted {
+				err = encryptedreader(f, &w)
+			} else {
+				err = reader(f, &w)
 			}
-			// TODO: this does not mean a successfull finish
+
+			if err != nil {
+				success = false
+				l.Error(err)
+				continue
+			}
+
+			err = w.Close()
+			if err != nil {
+				success = false
+				l.Error(err)
+				continue
+			}
+
 			file.Finished = true
 			file.Success = success
-			logrus.WithFields(logrus.Fields{
-				"Path": file.Path,
-				"Hash": fmt.Sprintf("%x", file.Hash),
-			}).Infof("File finished sending, Success=%t", success)
+			l.Infof("File finished sending, Success=%t", success)
 			err = conf.db.Save(&file).Error
 			if err != nil {
-				logrus.WithFields(logrus.Fields{
-					"Path": file.Path,
-					"Hash": fmt.Sprintf("%x", file.Hash),
-				}).Errorf("Error updating Finished in database %v", err)
+				l.Errorf("Error updating Finished in database %v", err)
 			}
 		}
 	}
 }
 
-func CreateFileReader(ctx context.Context, db *gorm.DB, chunksize int, required int, input chan database.File, output chan *structs.Chunk, workercount int) {
+func CreateFileReader(ctx context.Context, db *gorm.DB, chunksize int, encrypted bool, required int, input chan database.File, output chan *structs.Chunk, workercount int) {
 	conf := fileReaderConfig{
 		db:        db,
 		chunksize: chunksize,
+		encrypted: encrypted,
 		required:  required,
 		input:     input,
 		output:    output,

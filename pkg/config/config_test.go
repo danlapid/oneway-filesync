@@ -24,6 +24,7 @@ func TestGetConfig(t *testing.T) {
 				ReceiverPort = 5000
 				BandwidthLimit = 10000000
 				ChunkSize = 8192
+				EncryptedOutput = true
 				ChunkFecRequired = 5
 				ChunkFecTotal = 10
 				OutDir = "./out"
@@ -33,6 +34,7 @@ func TestGetConfig(t *testing.T) {
 				ReceiverPort:     5000,
 				BandwidthLimit:   10000000,
 				ChunkSize:        8192,
+				EncryptedOutput:  true,
 				ChunkFecRequired: 5,
 				ChunkFecTotal:    10,
 				OutDir:           "./out",
