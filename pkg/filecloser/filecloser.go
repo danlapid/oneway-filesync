@@ -2,6 +2,7 @@ package filecloser
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"oneway-filesync/pkg/database"
 	"oneway-filesync/pkg/structs"
@@ -21,6 +22,50 @@ func normalizePath(path string) string {
 
 		return filepath.Join(strings.Split(newpath, "/")...)
 	}
+}
+func closeFile(file *structs.OpenTempFile, outdir string) error {
+	l := logrus.WithFields(logrus.Fields{
+		"TempFile": file.TempFile,
+		"Path":     file.Path,
+		"Hash":     fmt.Sprintf("%x", file.Hash),
+	})
+
+	f, err := os.Open(file.TempFile)
+	if err != nil {
+		l.Errorf("Error opening tempfile: %v", err)
+		return err
+	}
+
+	hash, err := structs.HashFile(f)
+	err2 := f.Close()
+	if err != nil {
+		l.Errorf("Error hashing tempfile: %v", err)
+		return err
+	}
+	if err2 != nil {
+		l.Errorf("Error closing tempfile: %v", err2)
+		// Not returning error on purpose
+	}
+	if hash != file.Hash {
+		l.WithField("TempFileHash", fmt.Sprintf("%x", hash)).Errorf("Hash mismatch")
+		return errors.New("hash mismatch")
+	}
+
+	newpath := filepath.Join(outdir, normalizePath(file.Path))
+	err = os.MkdirAll(filepath.Dir(newpath), os.ModePerm)
+	if err != nil {
+		l.Errorf("Failed creating directory path: %v", err)
+		return err
+	}
+
+	err = os.Rename(file.TempFile, newpath)
+	if err != nil {
+		l.Errorf("Failed moving tempfile to new location: %v", err)
+		return err
+	}
+
+	l.WithField("NewPath", newpath).Infof("Successfully finished writing file")
+	return nil
 }
 
 type fileCloserConfig struct {
@@ -42,128 +87,17 @@ func worker(ctx context.Context, conf *fileCloserConfig) {
 				Finished: true,
 			}
 
-			f, err := os.Open(file.TempFile)
+			err := closeFile(file, conf.outdir)
 			if err != nil {
-				logrus.WithFields(logrus.Fields{
-					"TempFile": file.TempFile,
-					"Path":     file.Path,
-					"Hash":     fmt.Sprintf("%x", file.Hash),
-				}).Errorf("Error opening tempfile: %v", err)
 				dbentry.Success = false
-				if err := conf.db.Save(&dbentry).Error; err != nil {
-					logrus.WithFields(logrus.Fields{
-						"TempFile":        file.TempFile,
-						"Path":            file.Path,
-						"Hash":            fmt.Sprintf("%x", file.Hash),
-						"TransferSuccess": dbentry.Success,
-					}).Errorf("Failed committing to db: %v", err)
-				}
-				continue
+			} else {
+				dbentry.Success = true
 			}
-
-			hash, err := structs.HashFile(f)
-			err2 := f.Close()
-			if err != nil {
-				logrus.WithFields(logrus.Fields{
-					"TempFile": file.TempFile,
-					"Path":     file.Path,
-					"Hash":     fmt.Sprintf("%x", file.Hash),
-				}).Errorf("Error hashing tempfile: %v", err)
-				dbentry.Success = false
-				if err := conf.db.Save(&dbentry).Error; err != nil {
-					logrus.WithFields(logrus.Fields{
-						"TempFile":        file.TempFile,
-						"Path":            file.Path,
-						"Hash":            fmt.Sprintf("%x", file.Hash),
-						"TempFileHash":    fmt.Sprintf("%x", hash),
-						"TransferSuccess": dbentry.Success,
-					}).Errorf("Failed committing to db: %v", err)
-				}
-				continue
-			}
-			if hash != file.Hash {
-				logrus.WithFields(logrus.Fields{
-					"TempFile":     file.TempFile,
-					"Path":         file.Path,
-					"Hash":         fmt.Sprintf("%x", file.Hash),
-					"TempFileHash": fmt.Sprintf("%x", hash),
-				}).Errorf("Hash mismatch")
-				dbentry.Success = false
-				if err := conf.db.Save(&dbentry).Error; err != nil {
-					logrus.WithFields(logrus.Fields{
-						"TempFile":        file.TempFile,
-						"Path":            file.Path,
-						"Hash":            fmt.Sprintf("%x", file.Hash),
-						"TempFileHash":    fmt.Sprintf("%x", hash),
-						"TransferSuccess": dbentry.Success,
-					}).Errorf("Failed committing to db: %v", err)
-				}
-				continue
-			}
-			if err2 != nil {
-				logrus.WithFields(logrus.Fields{
-					"TempFile": file.TempFile,
-					"Path":     file.Path,
-					"Hash":     fmt.Sprintf("%x", file.Hash),
-				}).Errorf("Error ckisubg tempfile: %v", err)
-			}
-
-			newpath := filepath.Join(conf.outdir, normalizePath(file.Path))
-			err = os.MkdirAll(filepath.Dir(newpath), os.ModePerm)
-			if err != nil {
-				logrus.WithFields(logrus.Fields{
-					"TempFile":     file.TempFile,
-					"Path":         file.Path,
-					"Hash":         fmt.Sprintf("%x", file.Hash),
-					"TempFileHash": fmt.Sprintf("%x", hash),
-				}).Errorf("Failed creating directory path: %v", err)
-				dbentry.Success = false
-				if err := conf.db.Save(&dbentry).Error; err != nil {
-					logrus.WithFields(logrus.Fields{
-						"TempFile":        file.TempFile,
-						"Path":            file.Path,
-						"Hash":            fmt.Sprintf("%x", file.Hash),
-						"TempFileHash":    fmt.Sprintf("%x", hash),
-						"TransferSuccess": dbentry.Success,
-					}).Errorf("Failed committing to db: %v", err)
-				}
-				continue
-			}
-
-			err = os.Rename(file.TempFile, newpath)
-			if err != nil {
-				logrus.WithFields(logrus.Fields{
-					"TempFile":     file.TempFile,
-					"Path":         file.Path,
-					"Hash":         fmt.Sprintf("%x", file.Hash),
-					"TempFileHash": fmt.Sprintf("%x", hash),
-				}).Errorf("Failed moving tempfile to new location: %v", err)
-				dbentry.Success = false
-				if err := conf.db.Save(&dbentry).Error; err != nil {
-					logrus.WithFields(logrus.Fields{
-						"TempFile":        file.TempFile,
-						"Path":            file.Path,
-						"Hash":            fmt.Sprintf("%x", file.Hash),
-						"TempFileHash":    fmt.Sprintf("%x", hash),
-						"TransferSuccess": dbentry.Success,
-					}).Errorf("Failed committing to db: %v", err)
-				}
-				continue
-			}
-
-			logrus.WithFields(logrus.Fields{
-				"Path":    file.Path,
-				"Hash":    fmt.Sprintf("%x", file.Hash),
-				"NewPath": newpath,
-			}).Infof("Successfully finished writing file")
-			dbentry.Success = true
 			if err := conf.db.Save(&dbentry).Error; err != nil {
 				logrus.WithFields(logrus.Fields{
-					"TempFile":        file.TempFile,
-					"Path":            file.Path,
-					"Hash":            fmt.Sprintf("%x", file.Hash),
-					"TempFileHash":    fmt.Sprintf("%x", hash),
-					"TransferSuccess": dbentry.Success,
+					"TempFile": file.TempFile,
+					"Path":     file.Path,
+					"Hash":     fmt.Sprintf("%x", file.Hash),
 				}).Errorf("Failed committing to db: %v", err)
 			}
 		}
