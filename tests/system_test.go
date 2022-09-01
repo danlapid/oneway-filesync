@@ -173,7 +173,7 @@ func TestSetup(t *testing.T) {
 		ChunkFecRequired: 5,
 		ChunkFecTotal:    10,
 		OutDir:           "tests_out",
-		WatchDir:         filepath.Join(os.TempDir(), "tests_watch"),
+		WatchDir:         "tests_watch",
 	})
 	defer teardowntest()
 }
@@ -187,7 +187,7 @@ func TestSmallFile(t *testing.T) {
 		ChunkFecRequired: 5,
 		ChunkFecTotal:    10,
 		OutDir:           "tests_out",
-		WatchDir:         filepath.Join(os.TempDir(), "tests_watch"),
+		WatchDir:         "tests_watch",
 	}
 	senderdb, receiverdb, teardowntest := setupTest(t, conf)
 	defer teardowntest()
@@ -211,7 +211,7 @@ func TestLargeFile(t *testing.T) {
 		ChunkFecRequired: 5,
 		ChunkFecTotal:    10,
 		OutDir:           "tests_out",
-		WatchDir:         filepath.Join(os.TempDir(), "tests_watch"),
+		WatchDir:         "tests_watch",
 	}
 	senderdb, receiverdb, teardowntest := setupTest(t, conf)
 	defer teardowntest()
@@ -235,7 +235,7 @@ func TestWatcherFiles(t *testing.T) {
 		ChunkFecRequired: 5,
 		ChunkFecTotal:    10,
 		OutDir:           "tests_out",
-		WatchDir:         filepath.Join(os.TempDir(), "tests_watch"),
+		WatchDir:         "tests_watch",
 	}
 	_, receiverdb, teardowntest := setupTest(t, conf)
 	defer teardowntest()
