@@ -19,11 +19,6 @@ func main() {
 		return
 	}
 
-	if err = database.ConfigureDatabase(db); err != nil {
-		fmt.Printf("Failed setting up db with err %v\n", err)
-		return
-	}
-
 	path := os.Args[1]
 	err = filepath.Walk(path, func(filepath string, info os.FileInfo, e error) error {
 		if !info.IsDir() {

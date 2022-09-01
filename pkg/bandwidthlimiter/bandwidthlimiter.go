@@ -4,11 +4,12 @@ import (
 	"context"
 	"oneway-filesync/pkg/structs"
 
-	"go.uber.org/ratelimit"
+	"github.com/sirupsen/logrus"
+	"golang.org/x/time/rate"
 )
 
 type bandwidthLimiterConfig struct {
-	rl     ratelimit.Limiter
+	rl     *rate.Limiter
 	input  chan *structs.Chunk
 	output chan *structs.Chunk
 }
@@ -19,15 +20,18 @@ func worker(ctx context.Context, conf *bandwidthLimiterConfig) {
 		case <-ctx.Done():
 			return
 		case buf := <-conf.input:
-			conf.rl.Take()
-			conf.output <- buf
+			if err := conf.rl.WaitN(ctx, len(buf.Data)); err != nil {
+				logrus.Error(err)
+			} else {
+				conf.output <- buf
+			}
 		}
 	}
 }
 
-func CreateBandwidthLimiter(ctx context.Context, chunks_per_sec int, input chan *structs.Chunk, output chan *structs.Chunk) {
+func CreateBandwidthLimiter(ctx context.Context, bandwidth int, chunksize int, input chan *structs.Chunk, output chan *structs.Chunk) {
 	conf := bandwidthLimiterConfig{
-		rl:     ratelimit.New(chunks_per_sec),
+		rl:     rate.NewLimiter(rate.Limit(bandwidth), chunksize),
 		input:  input,
 		output: output,
 	}

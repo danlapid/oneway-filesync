@@ -30,36 +30,28 @@ jobs:
           go-version: ${{ matrix.go }}
 
       - name: test
+        if: runner.os != 'Windows'
         run: |
-          go test -v -race ./...
+          go install github.com/jstemmer/go-junit-report/v2@latest
+          go test -v -race ./... 2>&1 | go-junit-report -set-exit-code -iocopy -out report.xml
 
-  coverage:
-    strategy:
-      fail-fast: false
-      matrix:
-        os:
-          - ubuntu-latest
-        go:
-          - "1.19"
-    runs-on: ${{ matrix.os }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 1
-
-      - name: Install Go
-        uses: actions/setup-go@v3
-        with:
-          go-version: ${{ matrix.go }}
-
-      - name: Calc coverage
+      - name: test-windows
+        if: runner.os == 'Windows'
         run: |
-          go test -v -covermode=count -coverprofile=coverage.out -coverpkg ./pkg/... ./...
-      - name: Convert coverage.out to coverage.lcov
-        uses: jandelgado/gcov2lcov-action@master
-      - name: Coveralls
-        uses: coverallsapp/github-action@master
+          go install github.com/jstemmer/go-junit-report/v2@latest
+          go test -v ./... 2>&1 | go-junit-report -set-exit-code -iocopy -out report.xml
+
+      - name: Test Report
+        uses: dorny/test-reporter@v1
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          path-to-lcov: coverage.lcov
+          name: ${{ matrix.os }} Tests
+          path: report.xml
+          reporter: java-junit
+          fail-on-error: "false"
+        if: always()
+
+      - name: Test Summary
+        uses: test-summary/action@v1
+        with:
+          paths: report.xml
+        if: always()

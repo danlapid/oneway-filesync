@@ -25,6 +25,6 @@ func Sender(ctx context.Context, db *gorm.DB, conf config.Config) {
 	queuereader.CreateQueueReader(ctx, db, queue_chan)
 	filereader.CreateFileReader(ctx, db, conf.ChunkSize, conf.ChunkFecRequired, queue_chan, chunks_chan, maxprocs)
 	fecencoder.CreateFecEncoder(ctx, conf.ChunkSize, conf.ChunkFecRequired, conf.ChunkFecTotal, chunks_chan, shares_chan, maxprocs)
-	bandwidthlimiter.CreateBandwidthLimiter(ctx, conf.BandwidthLimit/conf.ChunkSize, shares_chan, bw_limited_chunks)
+	bandwidthlimiter.CreateBandwidthLimiter(ctx, conf.BandwidthLimit, conf.ChunkSize, shares_chan, bw_limited_chunks)
 	udpsender.CreateUdpSender(ctx, conf.ReceiverIP, conf.ReceiverPort, bw_limited_chunks, maxprocs)
 }

@@ -12,6 +12,7 @@ type Config struct {
 	ChunkFecRequired int
 	ChunkFecTotal    int
 	OutDir           string
+	WatchDir         string
 }
 
 func GetConfig(file string) (Config, error) {

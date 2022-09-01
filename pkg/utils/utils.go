@@ -4,16 +4,29 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/signal"
 	"runtime"
 	"strings"
 	"sync"
+	"syscall"
 
 	"github.com/sirupsen/logrus"
 )
 
 func formatFilePath(path string) string {
-	arr := strings.Split(path, "/")
-	return arr[len(arr)-1]
+	if strings.Contains(path, "\\") {
+		arr := strings.Split(path, "\\")
+		return arr[len(arr)-1]
+	} else {
+		arr := strings.Split(path, "/")
+		return arr[len(arr)-1]
+	}
+}
+
+func CtrlC() chan os.Signal {
+	done := make(chan os.Signal, 1)
+	signal.Notify(done, syscall.SIGINT, syscall.SIGTERM)
+	return done
 }
 
 func InitializeLogging(logFile string) {
