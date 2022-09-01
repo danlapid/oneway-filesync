@@ -17,7 +17,7 @@ import (
 
 func Sender(ctx context.Context, db *gorm.DB, conf config.Config) {
 	maxprocs := runtime.GOMAXPROCS(0) * 2
-	queue_chan := make(chan *database.File, 10)
+	queue_chan := make(chan database.File, 10)
 	chunks_chan := make(chan *structs.Chunk, 100)
 	shares_chan := make(chan *structs.Chunk, 100)
 	bw_limited_chunks := make(chan *structs.Chunk, 5) // Small buffer to reduce burst

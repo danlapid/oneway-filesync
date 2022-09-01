@@ -107,7 +107,7 @@ type fileReaderConfig struct {
 	chunksize int
 	encrypted bool
 	required  int
-	input     chan *database.File
+	input     chan database.File
 	output    chan *structs.Chunk
 }
 
@@ -124,7 +124,7 @@ func worker(ctx context.Context, conf *fileReaderConfig) {
 			l.Infof("Started sending file")
 
 			success := true
-			err := sendfile(file, conf)
+			err := sendfile(&file, conf)
 			if err != nil {
 				success = false
 				l.Error(err)
@@ -141,7 +141,7 @@ func worker(ctx context.Context, conf *fileReaderConfig) {
 	}
 }
 
-func CreateFileReader(ctx context.Context, db *gorm.DB, chunksize int, encrypted bool, required int, input chan *database.File, output chan *structs.Chunk, workercount int) {
+func CreateFileReader(ctx context.Context, db *gorm.DB, chunksize int, encrypted bool, required int, input chan database.File, output chan *structs.Chunk, workercount int) {
 	conf := fileReaderConfig{
 		db:        db,
 		chunksize: chunksize,
