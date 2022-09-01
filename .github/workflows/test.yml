@@ -1,11 +1,9 @@
 name: Test
+
 on:
   push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+    paths: ["**.go", "go.mod", ".github/workflows/*"]
+
 jobs:
   test:
     strategy:
