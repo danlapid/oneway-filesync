@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"oneway-filesync/pkg/config"
 	"oneway-filesync/pkg/database"
 	"os"
 	"path/filepath"
@@ -10,6 +11,12 @@ import (
 func main() {
 	if len(os.Args) < 2 {
 		fmt.Printf("Usage: %s <file/dir_path>\n", os.Args[0])
+		return
+	}
+
+	conf, err := config.GetConfig("config.toml")
+	if err != nil {
+		fmt.Printf("Failed reading config with err %v", err)
 		return
 	}
 
@@ -22,7 +29,7 @@ func main() {
 	path := os.Args[1]
 	err = filepath.Walk(path, func(filepath string, info os.FileInfo, e error) error {
 		if !info.IsDir() {
-			err := database.QueueFileForSending(db, filepath)
+			err := database.QueueFileForSending(db, filepath, conf.EncryptedOutput)
 			if err != nil {
 				fmt.Printf("%v\n", err)
 			} else {

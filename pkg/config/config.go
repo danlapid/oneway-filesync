@@ -9,6 +9,7 @@ type Config struct {
 	ReceiverPort     int
 	BandwidthLimit   int
 	ChunkSize        int
+	EncryptedOutput  bool
 	ChunkFecRequired int
 	ChunkFecTotal    int
 	OutDir           string

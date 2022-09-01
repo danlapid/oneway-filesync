@@ -90,6 +90,7 @@ func worker(ctx context.Context, conf *fileWriterConfig) {
 				TempFile:    tempfilepath,
 				Path:        chunk.Path,
 				Hash:        chunk.Hash,
+				Encrypted:   chunk.Encrypted,
 				LastUpdated: time.Now(),
 			})
 		}

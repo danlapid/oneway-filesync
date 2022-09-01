@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"io"
+	"oneway-filesync/pkg/zip"
 	"os"
 	"time"
 
@@ -13,12 +14,20 @@ import (
 
 const HASHSIZE = 32 // Using the sha256.Size as const directly causes linting issues
 
-func HashFile(f *os.File) ([HASHSIZE]byte, error) {
+func HashFile(f *os.File, encrypted bool) ([HASHSIZE]byte, error) {
 	var ret [HASHSIZE]byte
 	h := sha256.New()
-	if _, err := io.Copy(h, f); err != nil {
+
+	var err error
+	if encrypted {
+		err = zip.ZipFile(h, f)
+	} else {
+		_, err = io.Copy(h, f)
+	}
+	if err != nil {
 		return ret, err
 	}
+
 	hash := h.Sum(nil)
 	copy(ret[:], hash)
 	return ret, nil
@@ -27,11 +36,16 @@ func HashFile(f *os.File) ([HASHSIZE]byte, error) {
 type Chunk struct {
 	Path        string
 	Hash        [HASHSIZE]byte
+	Encrypted   bool
 	DataOffset  int64
 	DataPadding uint32
 	ShareIndex  uint32
 	Data        []byte
 }
+
+var b2i = map[bool]byte{false: 0, true: 1}
+
+var i2b = [2]bool{false, true}
 
 // Returns the percise overhead of a chunk
 // Dependant on path since it's the only variable-length field in a chunk
@@ -51,6 +65,7 @@ func (c Chunk) Encode() ([]byte, error) {
 	packer.PushUint32(uint32(len(pathbytes)))
 	packer.PushBytes(pathbytes)
 	packer.PushBytes(c.Hash[:])
+	packer.PushByte(b2i[c.Encrypted])
 	packer.PushInt64(c.DataOffset)
 	packer.PushUint32(c.DataPadding)
 	packer.PushUint32(c.ShareIndex)
@@ -70,6 +85,9 @@ func DecodeChunk(data []byte) (Chunk, error) {
 	var hashslice []byte
 	unpacker.FetchBytes(uint64(HASHSIZE), &hashslice)
 	copy(c.Hash[:], hashslice)
+	var enc byte
+	unpacker.FetchByte(&enc)
+	c.Encrypted = i2b[enc]
 	unpacker.FetchInt64(&c.DataOffset)
 	unpacker.FetchUint32(&c.DataPadding)
 	unpacker.FetchUint32(&c.ShareIndex)
@@ -82,5 +100,6 @@ type OpenTempFile struct {
 	TempFile    string
 	Path        string
 	Hash        [HASHSIZE]byte
+	Encrypted   bool
 	LastUpdated time.Time
 }
