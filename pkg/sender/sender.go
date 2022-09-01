@@ -23,7 +23,7 @@ func Sender(ctx context.Context, db *gorm.DB, conf config.Config) {
 	bw_limited_chunks := make(chan *structs.Chunk, 5) // Small buffer to reduce burst
 
 	queuereader.CreateQueueReader(ctx, db, queue_chan)
-	filereader.CreateFileReader(ctx, db, conf.ChunkSize, conf.EncryptedOutput, conf.ChunkFecRequired, queue_chan, chunks_chan, maxprocs)
+	filereader.CreateFileReader(ctx, db, conf.ChunkSize, conf.ChunkFecRequired, queue_chan, chunks_chan, maxprocs)
 	fecencoder.CreateFecEncoder(ctx, conf.ChunkSize, conf.ChunkFecRequired, conf.ChunkFecTotal, chunks_chan, shares_chan, maxprocs)
 	bandwidthlimiter.CreateBandwidthLimiter(ctx, conf.BandwidthLimit, conf.ChunkSize, shares_chan, bw_limited_chunks)
 	udpsender.CreateUdpSender(ctx, conf.ReceiverIP, conf.ReceiverPort, bw_limited_chunks, maxprocs)

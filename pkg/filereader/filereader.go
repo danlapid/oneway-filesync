@@ -60,18 +60,15 @@ func (w *chunkWriter) Close() error {
 }
 
 func sendfile(file *database.File, conf *fileReaderConfig) error {
-	filepath := file.Path
-	if conf.encrypted {
-		filepath += ".zip"
-	}
-	realchunksize := conf.chunksize - structs.ChunkOverhead(filepath)
+	realchunksize := conf.chunksize - structs.ChunkOverhead(file.Path)
 	realchunksize *= conf.required // FEC chunk size is BuffferSize/Required
 
 	w := chunkWriter{
 		chunksize: realchunksize,
 		sendchunk: func(data []byte, offset int64) {
 			chunk := structs.Chunk{
-				Path:       filepath,
+				Path:       file.Path,
+				Encrypted:  file.Encrypted,
 				DataOffset: offset,
 				Data:       data,
 			}
@@ -86,7 +83,7 @@ func sendfile(file *database.File, conf *fileReaderConfig) error {
 	}
 	defer f.Close()
 
-	if conf.encrypted {
+	if file.Encrypted {
 		err = zip.ZipFile(&w, f)
 	} else {
 		_, err = io.Copy(&w, f)
@@ -105,7 +102,6 @@ func sendfile(file *database.File, conf *fileReaderConfig) error {
 type fileReaderConfig struct {
 	db        *gorm.DB
 	chunksize int
-	encrypted bool
 	required  int
 	input     chan database.File
 	output    chan *structs.Chunk
@@ -141,11 +137,10 @@ func worker(ctx context.Context, conf *fileReaderConfig) {
 	}
 }
 
-func CreateFileReader(ctx context.Context, db *gorm.DB, chunksize int, encrypted bool, required int, input chan database.File, output chan *structs.Chunk, workercount int) {
+func CreateFileReader(ctx context.Context, db *gorm.DB, chunksize int, required int, input chan database.File, output chan *structs.Chunk, workercount int) {
 	conf := fileReaderConfig{
 		db:        db,
 		chunksize: chunksize,
-		encrypted: encrypted,
 		required:  required,
 		input:     input,
 		output:    output,

@@ -52,6 +52,9 @@ func closeFile(file *structs.OpenTempFile, outdir string) error {
 	}
 
 	newpath := filepath.Join(outdir, normalizePath(file.Path))
+	if file.Encrypted {
+		newpath += ".zip"
+	}
 	err = os.MkdirAll(filepath.Dir(newpath), os.ModePerm)
 	if err != nil {
 		l.Errorf("Failed creating directory path: %v", err)
@@ -81,10 +84,11 @@ func worker(ctx context.Context, conf *fileCloserConfig) {
 			return
 		case file := <-conf.input:
 			dbentry := database.File{
-				Path:     file.Path,
-				Hash:     file.Hash[:],
-				Started:  true,
-				Finished: true,
+				Path:      file.Path,
+				Hash:      file.Hash[:],
+				Encrypted: file.Encrypted,
+				Started:   true,
+				Finished:  true,
 			}
 
 			err := closeFile(file, conf.outdir)

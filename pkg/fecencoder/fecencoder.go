@@ -59,6 +59,7 @@ func worker(ctx context.Context, conf *fecEncoderConfig) {
 				chunk := structs.Chunk{
 					Path:        chunk.Path,
 					Hash:        chunk.Hash,
+					Encrypted:   chunk.Encrypted,
 					DataOffset:  chunk.DataOffset,
 					DataPadding: uint32(padding),
 					ShareIndex:  uint32(i),

@@ -14,11 +14,12 @@ import (
 
 type File struct {
 	gorm.Model
-	Path     string `json:"path"`     // Original file path in source machine
-	Hash     []byte `json:"hash"`     // Hash of the file for completeness validation
-	Started  bool   `json:"started"`  // Whether or not the file started being sent
-	Finished bool   `json:"finished"` // Whether or not the file was sent/recieved successfully
-	Success  bool   `json:"success"`  // Whether or not the finish was successfull
+	Path      string `json:"path"`      // Original file path in source machine
+	Hash      []byte `json:"hash"`      // Hash of the file for completeness validation
+	Encrypted bool   `json:"encrypted"` // Whether or not the file is packed as zip
+	Started   bool   `json:"started"`   // Whether or not the file started being sent
+	Finished  bool   `json:"finished"`  // Whether or not the file was sent/recieved successfully
+	Success   bool   `json:"success"`   // Whether or not the finish was successfull
 }
 type ReceivedFile struct {
 	File
@@ -80,10 +81,11 @@ func QueueFileForSending(db *gorm.DB, path string, encrypted bool) error {
 	}
 
 	file := File{
-		Path:     path,
-		Hash:     hash[:],
-		Finished: false,
-		Success:  false,
+		Path:      path,
+		Hash:      hash[:],
+		Encrypted: encrypted,
+		Finished:  false,
+		Success:   false,
 	}
 
 	return db.Create(&file).Error

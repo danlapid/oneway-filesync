@@ -46,6 +46,7 @@ func worker(ctx context.Context, conf *fecDecoderConfig) {
 			conf.output <- &structs.Chunk{
 				Path:       chunks[0].Path,
 				Hash:       chunks[0].Hash,
+				Encrypted:  chunks[0].Encrypted,
 				DataOffset: chunks[0].DataOffset,
 				Data:       data[:len(data)-int(chunks[0].DataPadding)],
 			}
