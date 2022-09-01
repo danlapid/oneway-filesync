@@ -40,7 +40,7 @@ func TestCreateBandwidthLimiter(t *testing.T) {
 			}
 			timepast := time.Since(start)
 
-			if timepast > time.Duration(expected+1)*time.Second || timepast < time.Duration(expected-1)*time.Second {
+			if timepast > time.Duration(expected*1.2)*time.Second || timepast < time.Duration(expected*0.8)*time.Second {
 				t.Fatalf("Bandwidthlimiter took %f seconds instead of %f", timepast.Seconds(), expected)
 			}
 			cancel()
