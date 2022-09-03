@@ -29,11 +29,13 @@ func worker(ctx context.Context, conf *bandwidthLimiterConfig) {
 	}
 }
 
-func CreateBandwidthLimiter(ctx context.Context, bandwidth int, chunksize int, input chan *structs.Chunk, output chan *structs.Chunk) {
+func CreateBandwidthLimiter(ctx context.Context, bandwidth int, chunksize int, input chan *structs.Chunk, output chan *structs.Chunk, workercount int) {
 	conf := bandwidthLimiterConfig{
 		rl:     rate.NewLimiter(rate.Limit(bandwidth), chunksize),
 		input:  input,
 		output: output,
 	}
-	go worker(ctx, &conf)
+	for i := 0; i < workercount; i++ {
+		go worker(ctx, &conf)
+	}
 }
