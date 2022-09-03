@@ -5,9 +5,9 @@ import (
 	"errors"
 	"net"
 	"oneway-filesync/pkg/structs"
-	"oneway-filesync/pkg/utils"
 	"time"
 
+	"github.com/danlapid/socketbuffer"
 	"github.com/sirupsen/logrus"
 )
 
@@ -24,7 +24,7 @@ func manager(ctx context.Context, conf *udpReceiverConfig) {
 		logrus.Errorf("Error getting raw socket: %v", err)
 		return
 	}
-	bufsize, err := utils.GetReadBuffer(rawconn)
+	bufsize, err := socketbuffer.GetReadBuffer(rawconn)
 	if err != nil {
 		logrus.Errorf("Error getting read buffer size: %v", err)
 	}
@@ -34,7 +34,7 @@ func manager(ctx context.Context, conf *udpReceiverConfig) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			toread, err := utils.GetAvailableBytes(rawconn)
+			toread, err := socketbuffer.GetAvailableBytes(rawconn)
 			if err != nil {
 				logrus.Errorf("Error getting available bytes on socket: %v", err)
 			}
