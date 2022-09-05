@@ -57,33 +57,26 @@ func worker(ctx context.Context, conf *fileWriterConfig) {
 			return
 		case chunk := <-conf.input:
 			tempfilepath := filepath.Join(conf.tempdir, fmt.Sprintf("%s___%x.tmp", pathReplace(chunk.Path), chunk.Hash))
+			l := logrus.WithFields(logrus.Fields{
+				"TempFile": tempfilepath,
+				"Path":     chunk.Path,
+				"Hash":     fmt.Sprintf("%x", chunk.Hash),
+			})
 			tempfile, err := os.OpenFile(tempfilepath, os.O_RDWR|os.O_CREATE, 0600)
 			if err != nil {
-				logrus.WithFields(logrus.Fields{
-					"TempFile": tempfilepath,
-					"Path":     chunk.Path,
-					"Hash":     fmt.Sprintf("%x", chunk.Hash),
-				}).Errorf("Error creating tempfile for chunk: %v", err)
+				l.Errorf("Error creating tempfile for chunk: %v", err)
 				continue
 			}
 
 			_, err = tempfile.WriteAt(chunk.Data, chunk.DataOffset)
 			err2 := tempfile.Close() // Not using defer because of overhead concerns
 			if err != nil {
-				logrus.WithFields(logrus.Fields{
-					"TempFile": tempfilepath,
-					"Path":     chunk.Path,
-					"Hash":     fmt.Sprintf("%x", chunk.Hash),
-				}).Errorf("Error writing to tempfile: %v", err)
+				l.Errorf("Error writing to tempfile: %v", err)
 				continue
 			}
 
 			if err2 != nil {
-				logrus.WithFields(logrus.Fields{
-					"TempFile": tempfilepath,
-					"Path":     chunk.Path,
-					"Hash":     fmt.Sprintf("%x", chunk.Hash),
-				}).Errorf("Error closing tempfile: %v", err)
+				l.Errorf("Error closing tempfile: %v", err)
 			}
 
 			conf.cache.Store(tempfilepath, &structs.OpenTempFile{
