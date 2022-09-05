@@ -100,6 +100,14 @@ func TestMap(t *testing.T) {
 		}
 	})
 
+	m.Store(1, "a")
+	m.Store(2, "b")
+	m.Range(func(key int, value string) bool {
+		m.Delete(1)
+		m.Delete(2)
+		return true
+	})
+
 	if m.Len() != 2 {
 		t.Fatal("Len failed")
 	}
