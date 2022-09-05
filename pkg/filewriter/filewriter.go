@@ -69,14 +69,10 @@ func worker(ctx context.Context, conf *fileWriterConfig) {
 			}
 
 			_, err = tempfile.WriteAt(chunk.Data, chunk.DataOffset)
-			err2 := tempfile.Close() // Not using defer because of overhead concerns
+			_ = tempfile.Close() // Not using defer because of overhead concerns, ignoring error on purpose
 			if err != nil {
 				l.Errorf("Error writing to tempfile: %v", err)
 				continue
-			}
-
-			if err2 != nil {
-				l.Errorf("Error closing tempfile: %v", err)
 			}
 
 			conf.cache.Store(tempfilepath, &structs.OpenTempFile{
