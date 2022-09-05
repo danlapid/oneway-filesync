@@ -95,7 +95,7 @@ func Test_worker(t *testing.T) {
 		expected string
 	}{
 		{"test-dberror", args{&structs.OpenTempFile{TempFile: "a", Path: "b", Hash: hash, Encrypted: false, LastUpdated: time.Now()}, "out"}, "Failed committing to db"},
-		{"test-hash-mismsatch", args{&structs.OpenTempFile{TempFile: "a", Path: "b", Hash: wronghash, Encrypted: false, LastUpdated: time.Now()}, "out"}, "Hash mismatch"},
+		{"test-hash-mismsatch", args{&structs.OpenTempFile{TempFile: "a", Path: "b", Hash: wronghash, Encrypted: false, LastUpdated: time.Now()}, "out"}, "hash mismatch"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
