@@ -292,5 +292,4 @@ func TestWatcherFiles(t *testing.T) {
 		defer os.Remove(tempfile)
 		defer waitForFinishedFile(t, receiverdb, tempfile, time.Now().Add(time.Minute*5), conf.OutDir)
 	}
-
 }

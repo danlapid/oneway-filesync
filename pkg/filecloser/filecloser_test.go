@@ -4,6 +4,8 @@ import (
 	"context"
 	"oneway-filesync/pkg/structs"
 	"os"
+	"runtime"
+	"strings"
 	"testing"
 	"time"
 
@@ -21,8 +23,15 @@ func Test_normalizePath(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := normalizePath(tt.path); got != tt.want {
-				t.Errorf("normalizePath() = %v, want %v", got, tt.want)
+			if runtime.GOOS == "windows" {
+				tt.want = strings.ReplaceAll(tt.want, "/", "\\")
+				if got := normalizePath(tt.path); got != tt.want {
+					t.Errorf("normalizePath() = %v, want %v", got, tt.want)
+				}
+			} else {
+				if got := normalizePath(tt.path); got != tt.want {
+					t.Errorf("normalizePath() = %v, want %v", got, tt.want)
+				}
 			}
 		})
 	}

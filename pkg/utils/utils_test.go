@@ -100,6 +100,10 @@ func TestMap(t *testing.T) {
 		}
 	})
 
+	if m.Len() != 2 {
+		t.Fatal("Len failed")
+	}
+
 	m.Store(1, "a")
 	m.Store(2, "b")
 	m.Range(func(key int, value string) bool {
@@ -108,9 +112,6 @@ func TestMap(t *testing.T) {
 		return true
 	})
 
-	if m.Len() != 2 {
-		t.Fatal("Len failed")
-	}
 }
 
 // Removed CtrlC test due to: https://github.com/golang/go/issues/46354
@@ -129,6 +130,5 @@ func TestCtrlC(t *testing.T) {
 		if !ok {
 			t.Fatal("Ctrl c not caught")
 		}
-
 	}
 }
