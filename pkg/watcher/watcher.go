@@ -50,7 +50,7 @@ func worker(ctx context.Context, conf *watcherConfig) {
 					delete(conf.cache, path)
 					err := database.QueueFileForSending(conf.db, path, conf.encrypted)
 					if err != nil {
-						logrus.Errorf("%v", err)
+						logrus.Errorf("Failed to queue file for sending: %v", err)
 					} else {
 						logrus.Infof("File '%s' queued for sending", path)
 					}

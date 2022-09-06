@@ -12,7 +12,7 @@ import (
 	"github.com/zhuangsirui/binpacker"
 )
 
-const HASHSIZE = 32 // Using the sha256.Size as const directly causes linting issues
+const HASHSIZE = sha256.Size
 
 func HashFile(f *os.File, encrypted bool) ([HASHSIZE]byte, error) {
 	var ret [HASHSIZE]byte
@@ -35,7 +35,7 @@ func HashFile(f *os.File, encrypted bool) ([HASHSIZE]byte, error) {
 
 type Chunk struct {
 	Path        string
-	Hash        [HASHSIZE]byte
+	Hash        [32]byte // Not using the HASHSIZE const as it causes linting issues
 	Encrypted   bool
 	DataOffset  int64
 	DataPadding uint32
