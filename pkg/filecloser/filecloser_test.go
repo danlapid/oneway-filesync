@@ -122,7 +122,7 @@ func Test_worker(t *testing.T) {
 			worker(ctx, &conf)
 
 			if !strings.Contains(memLog.String(), tt.expected) {
-				t.Fatalf("Expected not in log, '%v' not in '%vs'", tt.expected, memLog.String())
+				t.Fatalf("Expected not in log, '%v' not in '%v'", tt.expected, memLog.String())
 			}
 		})
 	}
