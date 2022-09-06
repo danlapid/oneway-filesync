@@ -25,33 +25,33 @@ type fecEncoderConfig struct {
 func worker(ctx context.Context, conf *fecEncoderConfig) {
 	fec, err := reedsolomon.New(conf.required, conf.total-conf.required)
 	if err != nil {
-		logrus.Fatalf("Error creating fec object: %v", err)
+		logrus.Errorf("Error creating fec object: %v", err)
+		return
 	}
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case chunk := <-conf.input:
+			l := logrus.WithFields(logrus.Fields{
+				"Path": chunk.Path,
+				"Hash": fmt.Sprintf("%x", chunk.Hash),
+			})
+
 			padding := (conf.required - (len(chunk.Data) % conf.required)) % conf.required
 			chunk.Data = append(chunk.Data, make([]byte, padding)...)
 
 			// Split the data into shares
 			shares, err := fec.Split(chunk.Data)
 			if err != nil {
-				logrus.WithFields(logrus.Fields{
-					"Path": chunk.Path,
-					"Hash": fmt.Sprintf("%x", chunk.Hash),
-				}).Errorf("Error splitting chunk: %v", err)
+				l.Errorf("Error splitting chunk: %v", err)
 				continue
 			}
 
 			// Encode the parity set
 			err = fec.Encode(shares)
 			if err != nil {
-				logrus.WithFields(logrus.Fields{
-					"Path": chunk.Path,
-					"Hash": fmt.Sprintf("%x", chunk.Hash),
-				}).Errorf("Error FEC encoding chunk: %v", err)
+				l.Errorf("Error FEC encoding chunk: %v", err)
 				continue
 			}
 

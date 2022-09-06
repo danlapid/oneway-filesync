@@ -2,7 +2,6 @@ package filecloser
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"oneway-filesync/pkg/database"
 	"oneway-filesync/pkg/structs"
@@ -24,31 +23,19 @@ func normalizePath(path string) string {
 	}
 }
 func closeFile(file *structs.OpenTempFile, outdir string) error {
-	l := logrus.WithFields(logrus.Fields{
-		"TempFile": file.TempFile,
-		"Path":     file.Path,
-		"Hash":     fmt.Sprintf("%x", file.Hash),
-	})
-
 	f, err := os.Open(file.TempFile)
 	if err != nil {
-		l.Errorf("Error opening tempfile: %v", err)
-		return err
+		return fmt.Errorf("error opening tempfile: %v", err)
 	}
 
 	hash, err := structs.HashFile(f, false)
-	err2 := f.Close()
+	_ = f.Close() // Ignoring error on purpose
 	if err != nil {
-		l.Errorf("Error hashing tempfile: %v", err)
-		return err
+		return fmt.Errorf("error hashing tempfile: %v", err)
 	}
-	if err2 != nil {
-		l.Errorf("Error closing tempfile: %v", err2)
-		// Not returning error on purpose
-	}
+
 	if hash != file.Hash {
-		l.WithField("TempFileHash", fmt.Sprintf("%x", hash)).Errorf("Hash mismatch")
-		return errors.New("hash mismatch")
+		return fmt.Errorf("hash mismatch '%v'!='%v'", fmt.Sprintf("%x", hash), fmt.Sprintf("%x", file.Hash))
 	}
 
 	newpath := filepath.Join(outdir, normalizePath(file.Path))
@@ -57,17 +44,14 @@ func closeFile(file *structs.OpenTempFile, outdir string) error {
 	}
 	err = os.MkdirAll(filepath.Dir(newpath), os.ModePerm)
 	if err != nil {
-		l.Errorf("Failed creating directory path: %v", err)
-		return err
+		return fmt.Errorf("failed creating directory path: %v", err)
 	}
 
 	err = os.Rename(file.TempFile, newpath)
 	if err != nil {
-		l.Errorf("Failed moving tempfile to new location: %v", err)
-		return err
+		return fmt.Errorf("failed moving tempfile to new location: %v", err)
 	}
 
-	l.WithField("NewPath", newpath).Infof("Successfully finished writing file")
 	return nil
 }
 
@@ -83,6 +67,11 @@ func worker(ctx context.Context, conf *fileCloserConfig) {
 		case <-ctx.Done():
 			return
 		case file := <-conf.input:
+			l := logrus.WithFields(logrus.Fields{
+				"TempFile": file.TempFile,
+				"Path":     file.Path,
+				"Hash":     fmt.Sprintf("%x", file.Hash),
+			})
 			dbentry := database.File{
 				Path:      file.Path,
 				Hash:      file.Hash[:],
@@ -94,15 +83,13 @@ func worker(ctx context.Context, conf *fileCloserConfig) {
 			err := closeFile(file, conf.outdir)
 			if err != nil {
 				dbentry.Success = false
+				l.Error(err)
 			} else {
 				dbentry.Success = true
+				l.Infof("Successfully finished writing file")
 			}
 			if err := conf.db.Save(&dbentry).Error; err != nil {
-				logrus.WithFields(logrus.Fields{
-					"TempFile": file.TempFile,
-					"Path":     file.Path,
-					"Hash":     fmt.Sprintf("%x", file.Hash),
-				}).Errorf("Failed committing to db: %v", err)
+				l.Errorf("Failed committing to db: %v", err)
 			}
 		}
 	}

@@ -18,7 +18,8 @@ type udpSenderConfig struct {
 func worker(ctx context.Context, conf *udpSenderConfig) {
 	conn, err := net.Dial("udp", fmt.Sprintf("%s:%d", conf.ip, conf.port))
 	if err != nil {
-		logrus.Fatalf("Error creating udp socket: %v", err)
+		logrus.Errorf("Error creating udp socket: %v", err)
+		return
 	}
 	defer conn.Close()
 	for {
@@ -26,20 +27,18 @@ func worker(ctx context.Context, conf *udpSenderConfig) {
 		case <-ctx.Done():
 			return
 		case share := <-conf.input:
+			l := logrus.WithFields(logrus.Fields{
+				"Path": share.Path,
+				"Hash": fmt.Sprintf("%x", share.Hash),
+			})
 			buf, err := share.Encode()
 			if err != nil {
-				logrus.WithFields(logrus.Fields{
-					"Path": share.Path,
-					"Hash": fmt.Sprintf("%x", share.Hash),
-				}).Errorf("Error encoding share: %v", err)
+				l.Errorf("Error encoding share: %v", err)
 				continue
 			}
 			_, err = conn.Write(buf)
 			if err != nil {
-				logrus.WithFields(logrus.Fields{
-					"Path": share.Path,
-					"Hash": fmt.Sprintf("%x", share.Hash),
-				}).Errorf("Error sending share: %v", err)
+				l.Errorf("Error sending share: %v", err)
 				continue
 			}
 		}

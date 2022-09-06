@@ -27,6 +27,7 @@ func manager(ctx context.Context, conf *udpReceiverConfig) {
 	bufsize, err := socketbuffer.GetReadBuffer(rawconn)
 	if err != nil {
 		logrus.Errorf("Error getting read buffer size: %v", err)
+		return
 	}
 
 	for {
@@ -37,6 +38,7 @@ func manager(ctx context.Context, conf *udpReceiverConfig) {
 			toread, err := socketbuffer.GetAvailableBytes(rawconn)
 			if err != nil {
 				logrus.Errorf("Error getting available bytes on socket: %v", err)
+				continue
 			}
 
 			if float64(toread)/float64(bufsize) > 0.8 {
@@ -62,7 +64,7 @@ func worker(ctx context.Context, conf *udpReceiverConfig) {
 					continue
 				}
 				logrus.Errorf("Error reading from socket: %v", err)
-				continue
+				return
 			}
 			chunk, err := structs.DecodeChunk(buf[:n])
 			if err != nil {
@@ -82,7 +84,8 @@ func CreateUdpReceiver(ctx context.Context, ip string, port int, chunksize int, 
 
 	conn, err := net.ListenUDP("udp", &addr)
 	if err != nil {
-		logrus.Fatalf("Error creating udp socket: %v", err)
+		logrus.Errorf("Error creating udp socket: %v", err)
+		return
 	}
 	go func() {
 		<-ctx.Done()

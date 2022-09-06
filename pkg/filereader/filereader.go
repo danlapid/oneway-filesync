@@ -21,42 +21,30 @@ type chunkWriter struct {
 	sendchunk func(data []byte, offset int64)
 }
 
-func (w *chunkWriter) dumpChunk() error {
+func (w *chunkWriter) dumpChunk() {
 	b := make([]byte, w.chunksize)
-	n, err := w.buf.Read(b)
-	if err != nil {
-		return err
+	n, _ := w.buf.Read(b) // err means EOF
+	if n > 0 {
+		w.sendchunk(b[:n], w.offset)
+		w.offset += int64(n)
 	}
-	w.sendchunk(b[:n], w.offset)
-	w.offset += int64(n)
-	return nil
 }
 
 func (w *chunkWriter) Write(p []byte) (int, error) {
-	_, err := w.buf.Write(p)
-	if err != nil {
-		return 0, err
-	}
+	_, _ = w.buf.Write(p) // bytes.Buffer.Write never returns error
 	if w.buf.Len() > w.chunksize {
-		err := w.dumpChunk()
-		if err != nil {
-			return 0, err
-		}
+		w.dumpChunk()
 	}
 	return len(p), nil
 }
 
-func (w *chunkWriter) Close() error {
+func (w *chunkWriter) Close() {
 	for {
 		if w.buf.Len() == 0 {
 			break
 		}
-		err := w.dumpChunk()
-		if err != nil {
-			return err
-		}
+		w.dumpChunk()
 	}
-	return nil
 }
 
 func sendfile(file *database.File, conf *fileReaderConfig) error {
@@ -92,10 +80,7 @@ func sendfile(file *database.File, conf *fileReaderConfig) error {
 		return err
 	}
 
-	err = w.Close()
-	if err != nil {
-		return err
-	}
+	w.Close()
 	return nil
 }
 
