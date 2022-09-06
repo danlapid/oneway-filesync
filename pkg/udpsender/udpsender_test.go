@@ -49,7 +49,7 @@ func Test_worker(t *testing.T) {
 	}{
 		{"test-works", args{ip, port, structs.Chunk{}}, false, ""},
 		{"test-socket-err", args{ip, 88888, structs.Chunk{}}, true, "Error creating udp socket"},
-		{"test-message-too-long", args{ip, port, structs.Chunk{Data: make([]byte, 100*1024)}}, true, "write: message too long"},
+		{"test-message-too-long", args{ip, port, structs.Chunk{Data: make([]byte, 100*1024)}}, true, "Error sending share: write udp"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
