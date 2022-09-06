@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log"
-	mathrand "math/rand"
+	"math/big"
 	"oneway-filesync/pkg/config"
 	"oneway-filesync/pkg/database"
 	"oneway-filesync/pkg/receiver"
@@ -20,6 +20,14 @@ import (
 
 	"gorm.io/gorm"
 )
+
+func randint(max int64) int {
+	nBig, err := rand.Int(rand.Reader, big.NewInt(max))
+	if err != nil {
+		panic(err)
+	}
+	return int(nBig.Int64())
+}
 
 func getDiff(t *testing.T, path1 string, path2 string) int {
 	diff := 0
@@ -168,7 +176,7 @@ func setupTest(t *testing.T, conf config.Config) (*gorm.DB, *gorm.DB, func()) {
 func TestSetup(t *testing.T) {
 	_, _, teardowntest := setupTest(t, config.Config{
 		ReceiverIP:       "127.0.0.1",
-		ReceiverPort:     mathrand.Intn(30000) + 30000,
+		ReceiverPort:     randint(30000) + 30000,
 		BandwidthLimit:   10000,
 		ChunkSize:        8192,
 		EncryptedOutput:  true,
@@ -195,7 +203,7 @@ func TestFileTransfer(t *testing.T) {
 				[]int{500, 1024 * 1024},
 				config.Config{
 					ReceiverIP:       "127.0.0.1",
-					ReceiverPort:     mathrand.Intn(30000) + 30000,
+					ReceiverPort:     randint(30000) + 30000,
 					BandwidthLimit:   100 * 1024,
 					ChunkSize:        8192,
 					EncryptedOutput:  false,
@@ -212,7 +220,7 @@ func TestFileTransfer(t *testing.T) {
 				[]int{500, 1024 * 1024},
 				config.Config{
 					ReceiverIP:       "127.0.0.1",
-					ReceiverPort:     mathrand.Intn(30000) + 30000,
+					ReceiverPort:     randint(30000) + 30000,
 					BandwidthLimit:   100 * 1024,
 					ChunkSize:        8192,
 					EncryptedOutput:  true,
@@ -248,7 +256,7 @@ func TestFileTransfer(t *testing.T) {
 func TestWatcherFiles(t *testing.T) {
 	conf := config.Config{
 		ReceiverIP:       "127.0.0.1",
-		ReceiverPort:     mathrand.Intn(30000) + 30000,
+		ReceiverPort:     randint(30000) + 30000,
 		BandwidthLimit:   1024 * 1024,
 		ChunkSize:        8192,
 		EncryptedOutput:  true,

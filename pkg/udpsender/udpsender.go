@@ -18,7 +18,8 @@ type udpSenderConfig struct {
 func worker(ctx context.Context, conf *udpSenderConfig) {
 	conn, err := net.Dial("udp", fmt.Sprintf("%s:%d", conf.ip, conf.port))
 	if err != nil {
-		logrus.Fatalf("Error creating udp socket: %v", err)
+		logrus.Errorf("Error creating udp socket: %v", err)
+		return
 	}
 	defer conn.Close()
 	for {
