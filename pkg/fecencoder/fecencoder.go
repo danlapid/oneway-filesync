@@ -10,11 +10,10 @@ import (
 )
 
 type fecEncoderConfig struct {
-	chunksize int
-	required  int
-	total     int
-	input     chan *structs.Chunk
-	output    chan *structs.Chunk
+	required int
+	total    int
+	input    chan *structs.Chunk
+	output   chan *structs.Chunk
 }
 
 // FEC routine:
@@ -71,13 +70,12 @@ func worker(ctx context.Context, conf *fecEncoderConfig) {
 	}
 }
 
-func CreateFecEncoder(ctx context.Context, chunksize int, required int, total int, input chan *structs.Chunk, output chan *structs.Chunk, workercount int) {
+func CreateFecEncoder(ctx context.Context, required int, total int, input chan *structs.Chunk, output chan *structs.Chunk, workercount int) {
 	conf := fecEncoderConfig{
-		chunksize: chunksize,
-		required:  required,
-		total:     total,
-		input:     input,
-		output:    output,
+		required: required,
+		total:    total,
+		input:    input,
+		output:   output,
 	}
 	for i := 0; i < workercount; i++ {
 		go worker(ctx, &conf)
