@@ -71,7 +71,7 @@ func Test_worker(t *testing.T) {
 					t.Fatalf("Expected not in log, '%v' not in '%v'", tt.expectedErr, memLog.String())
 				}
 			} else {
-				receiving_conn.Read(make([]byte, 8192))
+				_, _ = receiving_conn.Read(make([]byte, 8192))
 			}
 		})
 	}
