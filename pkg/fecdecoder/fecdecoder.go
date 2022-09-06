@@ -19,7 +19,7 @@ type fecDecoderConfig struct {
 func worker(ctx context.Context, conf *fecDecoderConfig) {
 	fec, err := reedsolomon.New(conf.required, conf.total-conf.required)
 	if err != nil {
-		logrus.Error("Error creating fec object: %v", err)
+		logrus.Errorf("Error creating fec object: %v", err)
 		return
 	}
 	for {
