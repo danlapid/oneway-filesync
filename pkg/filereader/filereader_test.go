@@ -118,31 +118,8 @@ func Test_worker(t *testing.T) {
 			worker(ctx, tt.args.conf)
 
 			if !strings.Contains(memLog.String(), tt.expected) {
-				t.Fatalf("Expected not in log, '%v' not in '%vs'", tt.expected, memLog.String())
+				t.Fatalf("Expected not in log, '%v' not in '%v'", tt.expected, memLog.String())
 			}
-		})
-	}
-}
-
-func TestCreateFileReader(t *testing.T) {
-	type args struct {
-		ctx         context.Context
-		db          *gorm.DB
-		chunksize   int
-		required    int
-		input       chan database.File
-		output      chan *structs.Chunk
-		workercount int
-	}
-	tests := []struct {
-		name string
-		args args
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			CreateFileReader(tt.args.ctx, tt.args.db, tt.args.chunksize, tt.args.required, tt.args.input, tt.args.output, tt.args.workercount)
 		})
 	}
 }
