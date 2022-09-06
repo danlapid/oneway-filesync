@@ -3,8 +3,8 @@ package watcher
 import (
 	"bytes"
 	"context"
-	"oneway-filesync/pkg/config"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -43,24 +43,6 @@ func Test_isDirectory(t *testing.T) {
 	}
 }
 
-func Test_worker(t *testing.T) {
-	type args struct {
-		ctx  context.Context
-		conf *watcherConfig
-	}
-	tests := []struct {
-		name string
-		args args
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			worker(tt.args.ctx, tt.args.conf)
-		})
-	}
-}
-
 func TestCreateWatcher_baddir(t *testing.T) {
 	var memLog bytes.Buffer
 	logrus.SetOutput(&memLog)
@@ -74,45 +56,39 @@ func TestCreateWatcher_baddir(t *testing.T) {
 	}
 }
 
-func TestCreateWatcher_baddb(t *testing.T) {
+func Test_worker_baddb(t *testing.T) {
+	var memLog bytes.Buffer
+	logrus.SetOutput(&memLog)
+
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{Logger: gormlogger.Discard})
 	if err != nil {
 		t.Fatal(err)
 	}
-	var memLog bytes.Buffer
-	logrus.SetOutput(&memLog)
 
-	ctx, cancel := context.WithCancel(context.Background())
-	CreateWatcher(ctx, db, ".", false, make(chan notify.EventInfo, 5))
+	conf := watcherConfig{
+		db:        db,
+		encrypted: false,
+		input:     make(chan notify.EventInfo, 5),
+		cache:     make(map[string]time.Time),
+	}
 
-	err = os.WriteFile("testfile", make([]byte, 20), os.ModePerm)
-	if err != nil {
+	if err := notify.Watch(filepath.Join(".", "..."), conf.input, notify.Write, notify.Create); err != nil {
 		t.Fatal(err)
 	}
-	defer os.Remove("testfile")
-	time.Sleep(60 * time.Second)
-	cancel()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		err = os.WriteFile("testfile", make([]byte, 20), os.ModePerm)
+		if err != nil {
+			t.Error(err)
+		}
+		defer os.Remove("testfile")
+		time.Sleep(60 * time.Second)
+		cancel()
+	}()
+	worker(ctx, &conf)
 
 	if !strings.Contains(memLog.String(), "Failed to queue file for sending:") {
 		t.Fatalf("Expected not in log, '%v' not in '%v'", "Failed to queue file for sending:", memLog.String())
-	}
-}
-
-func TestWatcher(t *testing.T) {
-	type args struct {
-		ctx  context.Context
-		db   *gorm.DB
-		conf config.Config
-	}
-	tests := []struct {
-		name string
-		args args
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			Watcher(tt.args.ctx, tt.args.db, tt.args.conf)
-		})
 	}
 }
