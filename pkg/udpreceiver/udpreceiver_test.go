@@ -223,15 +223,13 @@ func Test_worker_error_decoding(t *testing.T) {
 	chunksize := 8192
 	output := make(chan *structs.Chunk, 5)
 	conf := &udpReceiverConfig{receiving_conn, chunksize, output}
-	chunk := structs.Chunk{Path: "a", Data: make([]byte, chunksize)}
-
+	data := make([]byte, chunksize/2)
+	for i := range data {
+		data[i] = 0xff
+	}
 	var memLog bytes.Buffer
 	logrus.SetOutput(&memLog)
 
-	data, err := chunk.Encode()
-	if err != nil {
-		t.Fatal(err)
-	}
 	_, err = sending_conn.Write(data)
 	if err != nil {
 		t.Fatal(err)
@@ -246,7 +244,7 @@ func Test_worker_error_decoding(t *testing.T) {
 	worker(ctx, conf)
 
 	if !strings.Contains(memLog.String(), "Error decoding chunk") {
-		t.Fatalf("Expected not in log, '%v' not in '%v'", "Error decoing chunk", memLog.String())
+		t.Fatalf("Expected not in log, '%v' not in '%v'", "Error decoding chunk", memLog.String())
 	}
 }
 
