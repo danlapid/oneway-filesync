@@ -2,6 +2,7 @@ package database
 
 import (
 	"os"
+	"strings"
 	"testing"
 
 	"gorm.io/driver/sqlite"
@@ -28,7 +29,7 @@ func TestOpenDatabase(t *testing.T) {
 				t.Errorf("OpenDatabase() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			_ = os.Remove(DBFILE)
+			_ = os.Remove(strings.Split(DBFILE, "?")[0])
 		})
 	}
 }

@@ -167,7 +167,7 @@ func setupTest(t *testing.T, conf config.Config) (*gorm.DB, *gorm.DB, func()) {
 				t.Log(err)
 			}
 		}
-		if err := os.Remove(database.DBFILE); err != nil {
+		if err := os.Remove(strings.Split(database.DBFILE, "?")[0]); err != nil {
 			t.Log(err)
 		}
 	}

@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"gorm.io/driver/sqlite"
+	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
 	gormlogger "gorm.io/gorm/logger"
 	"gorm.io/gorm/schema"
@@ -25,7 +25,7 @@ type ReceivedFile struct {
 	File
 }
 
-const DBFILE = "gorm.db"
+const DBFILE = "gorm.db?cache=shared&mode=rwc&_journal_mode=WAL&_pragma=journal_mode(WAL)&_pragma=busy_timeout(5000)"
 
 func configureDatabase(db *gorm.DB) error {
 	return db.AutoMigrate(&File{})
