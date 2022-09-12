@@ -7,6 +7,10 @@ Sync files between different hosts over a one way network link such as a Data Di
 [![Coverage Status](https://coveralls.io/repos/github/danlapid/oneway-filesync/badge.svg?branch=main)](https://coveralls.io/github/danlapid/oneway-filesync?branch=main)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
 
+## Based on the paper
+
+Stevens, Malcolm W., and M. Pope. An implementation of an optical data diode. DSTO, 1999.
+
 ## Usage
 
 ### Download binaries from [Releases](https://github.com/danlapid/oneway-filesync/releases)
