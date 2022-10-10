@@ -6,7 +6,7 @@ require (
 	github.com/BurntSushi/toml v1.2.0
 	github.com/danlapid/socketbuffer v1.0.0
 	github.com/glebarez/sqlite v1.4.6
-	github.com/klauspost/reedsolomon v1.10.0
+	github.com/klauspost/reedsolomon v1.11.1
 	github.com/rjeczalik/notify v0.9.3-0.20210809113154-3472d85e95cd
 	github.com/sirupsen/logrus v1.9.0
 	github.com/yeka/zip v0.0.0-20180914125537-d046722c6feb
@@ -21,7 +21,7 @@ require (
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
-	github.com/klauspost/cpuid/v2 v2.0.14 // indirect
+	github.com/klauspost/cpuid/v2 v2.1.1 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/mattn/go-sqlite3 v1.14.12 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20200410134404-eec4a21b6bb0 // indirect
