@@ -3,7 +3,7 @@ module oneway-filesync
 go 1.19
 
 require (
-	github.com/BurntSushi/toml v1.2.0
+	github.com/BurntSushi/toml v1.2.1
 	github.com/danlapid/socketbuffer v1.0.0
 	github.com/glebarez/sqlite v1.4.6
 	github.com/klauspost/reedsolomon v1.10.0
