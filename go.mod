@@ -13,7 +13,7 @@ require (
 	github.com/zhuangsirui/binpacker v2.0.0+incompatible
 	golang.org/x/time v0.0.0-20220722155302-e5dcc9cfc0b9
 	gorm.io/driver/sqlite v1.3.6
-	gorm.io/gorm v1.23.8
+	gorm.io/gorm v1.24.1
 )
 
 require (
