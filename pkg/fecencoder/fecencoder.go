@@ -38,7 +38,9 @@ func worker(ctx context.Context, conf *fecEncoderConfig) {
 			})
 
 			padding := (conf.required - (len(chunk.Data) % conf.required)) % conf.required
-			chunk.Data = append(chunk.Data, make([]byte, padding)...)
+			totaldata := make([]byte, len(chunk.Data)+padding, ((len(chunk.Data)+padding)/conf.required)*conf.total)
+			copy(totaldata, chunk.Data)
+			chunk.Data = totaldata
 
 			// Split the data into shares
 			shares, err := fec.Split(chunk.Data)
