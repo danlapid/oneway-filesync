@@ -26,8 +26,6 @@ builds:
     goarch:
       - amd64
       - arm64
-    ignore:
-      - goos: darwin
   - id: sendfiles
     main: ./cmd/sendfiles/main.go
     binary: sendfiles
@@ -40,8 +38,6 @@ builds:
     goarch:
       - amd64
       - arm64
-    ignore:
-      - goos: darwin
   - id: watcher
     main: ./cmd/watcher/main.go
     binary: watcher
